@@ -12,7 +12,8 @@ The goal is simple: **make digital reading more active, intentional, and useful 
 
 - Upload and read PDF books
 - Automatically detect chapters
-- Navigate books by chapter (page ranges)
+- Track your progress and advance your learning
+- Take AI generated tests to deepen your understanding
 - Ask questions about the book using AI
 - Highlight text and add notes while reading
 - Generate explanations or summaries on demand

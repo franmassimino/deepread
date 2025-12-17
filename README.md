@@ -1,4 +1,4 @@
-# 📘 Deepread
+# 📘 Deepread - Read and learn better with AI
 
 Deepread is a personal project focused on reading and studying complex books with the help of AI.
 

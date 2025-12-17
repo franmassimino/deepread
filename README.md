@@ -4,6 +4,8 @@ Deepread is a personal project focused on reading and studying complex books wit
 
 The goal is simple: **make digital reading more active, intentional, and useful for understanding** — not just for finishing pages.
 
+<img width="1916" height="938" alt="image" src="https://github.com/user-attachments/assets/cb1ff5a8-9472-4db1-9dd4-6a2586951204" />
+
 ---
 
 ## ✨ What Deepread does

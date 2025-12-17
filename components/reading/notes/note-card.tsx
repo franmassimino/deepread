@@ -18,7 +18,7 @@ interface NoteCardProps {
   note: Note
   onEdit: (note: Note) => void
   onDelete: (id: string) => void
-  onAIAction: (action: string, noteId: string) => void
+  onAIAction: (action: string, noteId?: string) => void
 }
 
 export function NoteCard({ note, onEdit, onDelete, onAIAction }: NoteCardProps) {

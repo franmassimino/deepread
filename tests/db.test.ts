@@ -13,10 +13,10 @@ describe('Database Setup', () => {
       expect(prisma.$disconnect).toBeDefined();
     });
 
-    it('should use singleton pattern (same instance)', () => {
-      const { prisma: prisma1 } = require('../lib/db/db');
-      const { prisma: prisma2 } = require('../lib/db/db');
-      expect(prisma1).toBe(prisma2);
+    it('should use singleton pattern (same instance)', async () => {
+      const module1 = await import('../lib/db/db');
+      const module2 = await import('../lib/db/db');
+      expect(module1.prisma).toBe(module2.prisma);
     });
   });
 

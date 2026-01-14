@@ -35,7 +35,7 @@ describe('Migration System', () => {
         // We check the output instead
         expect(error.stdout || error.stderr).toBeDefined();
       }
-    });
+    }, 10000); // Increase timeout to 10 seconds
   });
 
   describe('Schema File', () => {

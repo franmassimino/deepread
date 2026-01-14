@@ -9,7 +9,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { List } from 'lucide-react'
 import Link from 'next/link'
-import type { Chapter } from '@/lib/mock-book-data'
+import type { Chapter } from '@/lib/utils/mock-book-data'
 
 interface ChaptersPopoverProps {
   bookId: string

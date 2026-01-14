@@ -8,8 +8,8 @@ import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload-pdf-dialog'
 import { BookUploadItem } from '@/components/book-upload-item'
-import { useUploadStore } from '@/lib/upload-store'
-import { useBooksStore } from '@/lib/books-store'
+import { useUploadStore } from '@/lib/stores/upload-store'
+import { useBooksStore } from '@/lib/stores/books-store'
 
 const mockBooks = [
   {

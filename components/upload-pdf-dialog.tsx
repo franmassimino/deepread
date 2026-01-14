@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useUploadStore } from "@/lib/upload-store";
+import { useUploadStore } from "@/lib/stores/upload-store";
 import { X } from "lucide-react";
 
 const MAX_FILES = 3;

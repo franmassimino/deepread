@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import type { Chapter } from '@/lib/mock-book-data'
+import type { Chapter } from '@/lib/utils/mock-book-data'
 
 interface BottomNavigationProps {
   bookId: string

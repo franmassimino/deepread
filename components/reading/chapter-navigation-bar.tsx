@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ChaptersPopover } from './chapters-popover'
-import type { Chapter } from '@/lib/mock-book-data'
+import type { Chapter } from '@/lib/utils/mock-book-data'
 
 interface ChapterNavigationBarProps {
   bookId: string

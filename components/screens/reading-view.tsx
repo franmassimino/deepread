@@ -8,7 +8,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable'
-import { mockBook, getChapterByNumber, getNextChapter, getPreviousChapter } from '@/lib/mock-book-data'
+import { mockBook, getChapterByNumber, getNextChapter, getPreviousChapter } from '@/lib/utils/mock-book-data'
 import { ChapterNavigationBar } from '@/components/reading/chapter-navigation-bar'
 import { ReadingContent } from '@/components/reading/reading-content'
 import { LearningSidebar } from '@/components/reading/learning-sidebar'

@@ -2,7 +2,7 @@
 
 import { Highlighter } from 'lucide-react'
 import { Button } from './button'
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils/utils"
 
 export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'orange'
 

@@ -1,5 +1,5 @@
 // Test database connection
-import { prisma } from '../../lib/db/db';
+import { prisma } from '@/lib/db/db';
 
 async function testConnection() {
   try {

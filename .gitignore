@@ -57,9 +57,5 @@ Thumbs.db
 
 /generated/prisma
 
-# BMAD workflow artifacts
-/_bmad/
-/_bmad-output/
-
 # Temporary Claude files
 tmpclaude-*

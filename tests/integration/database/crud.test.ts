@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { prisma } from '../lib/db/db';
+import { prisma } from '@/lib/db/db';
 
 describe('Database Setup', () => {
   afterAll(async () => {
@@ -14,8 +14,8 @@ describe('Database Setup', () => {
     });
 
     it('should use singleton pattern (same instance)', async () => {
-      const module1 = await import('../lib/db/db');
-      const module2 = await import('../lib/db/db');
+      const module1 = await import('@/lib/db/db');
+      const module2 = await import('@/lib/db/db');
       expect(module1.prisma).toBe(module2.prisma);
     });
   });

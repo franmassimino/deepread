@@ -14,3 +14,62 @@ model User {
   email String  @unique
   name  String?
 }
+
+// Book status enum
+enum BookStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+// Book model
+model Book {
+  id                  String             @id @default(uuid())
+  title               String
+  author              String?
+  summary             String
+  coverUrl            String?
+  pdfPath             String
+  totalPages          Int                @default(0)
+  wordCount           Int                @default(0)
+  readingTimeMinutes  Int                @default(0)
+  status              BookStatus         @default(PROCESSING)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  chapters            Chapter[]
+  readingProgress     ReadingProgress[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Chapter model
+model Chapter {
+  id             String    @id @default(uuid())
+  bookId         String
+  chapterNumber  Int
+  title          String
+  content        String
+  wordCount      Int       @default(0)
+  startPage      Int?
+  endPage        Int?
+  createdAt      DateTime  @default(now())
+
+  book           Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId, chapterNumber])
+}
+
+// ReadingProgress model
+model ReadingProgress {
+  id          String   @id @default(uuid())
+  bookId      String
+  chapterId   String
+  position    Int      @default(0)
+  lastReadAt  DateTime @updatedAt
+
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, chapterId])
+}

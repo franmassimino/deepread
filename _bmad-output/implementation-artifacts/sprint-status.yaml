@@ -1,0 +1,95 @@
+# generated: 2026-01-14
+# project: deepread
+# project_key: deepread
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-01-14
+project: deepread
+project_key: deepread
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: in-progress
+  1-1-database-setup-with-prisma: review
+  1-2-core-database-schema: done
+  1-3-redis-and-bullmq-setup: review
+  1-4-file-storage-service: backlog
+  1-5-development-environment-configuration: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-basic-file-upload-api: backlog
+  2-2-upload-progress-tracking-ui: backlog
+  2-3-multi-file-upload-support: backlog
+  2-4-upload-error-handling: backlog
+  2-5-library-view-with-uploaded-books: backlog
+  2-6-delete-book-from-library: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-job-queue-system: backlog
+  3-2-pdf-extraction-worker: backlog
+  3-3-image-and-table-extraction: backlog
+  3-4-content-conversion-to-html: backlog
+  3-5-job-chain-orchestration: backlog
+  3-6-real-time-progress-updates-sse: backlog
+  3-7-processing-error-recovery: backlog
+  3-8-background-processing-persistence: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-mastra-ai-integration: backlog
+  4-2-book-summary-generation: backlog
+  4-3-chapter-boundary-detection: backlog
+  4-4-chapter-metadata-calculation: backlog
+  4-5-book-title-and-author-detection: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-book-library-api: backlog
+  5-2-library-grid-view: backlog
+  5-3-book-overview-page: backlog
+  5-4-book-search-and-filter: backlog
+  5-5-library-status-filters: backlog
+  5-6-reading-progress-tracking: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-chapter-content-rendering: backlog
+  6-2-chapter-navigation-controls: backlog
+  6-3-chapter-list-sidebar: backlog
+  6-4-reading-position-persistence: backlog
+  6-5-reading-mode-customization: backlog
+  6-6-reading-statistics: backlog
+  epic-6-retrospective: optional

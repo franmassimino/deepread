@@ -43,8 +43,8 @@ development_status:
   epic-1: in-progress
   1-1-database-setup-with-prisma: review
   1-2-core-database-schema: done
-  1-3-redis-and-bullmq-setup: review
-  1-4-file-storage-service: backlog
+  1-3-redis-and-bullmq-setup: done
+  1-4-file-storage-service: done
   1-5-development-environment-configuration: backlog
   epic-1-retrospective: optional
 

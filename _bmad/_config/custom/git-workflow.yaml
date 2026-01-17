@@ -1,0 +1,57 @@
+# Git Workflow Configuration for BMAD Dev Agent
+# This file defines branching and PR policies for story implementation
+
+git_workflow:
+  # Protected branches - never commit directly to these
+  protected_branches:
+    - master
+    - main
+
+  # Branch naming convention for stories
+  branch_naming:
+    pattern: "feature/story-{epic}-{story-number}"
+    examples:
+      - "feature/story-2.1-basic-file-upload"
+      - "feature/story-3.2-pdf-extraction-worker"
+
+  # Story workflow rules
+  story_workflow:
+    # BEFORE starting any story implementation:
+    on_story_start:
+      - ensure_on_main_branch: true
+      - pull_latest: true
+      - create_feature_branch: true
+
+    # AFTER completing story implementation:
+    on_story_complete:
+      - commit_all_changes: true
+      - push_to_remote: true
+      - create_pull_request:
+          target: master
+          title_format: "feat: {story-title} (Story {story-id})"
+      - never_merge_directly: true
+
+  # Pull Request requirements
+  pull_request:
+    required: true
+    target_branch: master
+    auto_create: true
+    template: |
+      ## Summary
+      Implementation of Story {story-id}: {story-title}
+
+      ## Changes
+      {changes-summary}
+
+      ## Test Plan
+      - [ ] All acceptance criteria verified
+      - [ ] Unit tests passing
+      - [ ] No linting errors
+
+      🤖 Generated with Claude Code + BMAD
+
+# Instructions for Dev Agent:
+# 1. At story START: `git checkout master && git pull && git checkout -b feature/story-X.X-description`
+# 2. During development: Commit frequently with meaningful messages
+# 3. At story END: Push branch and create PR to master - NEVER merge directly
+# 4. Wait for PR review/approval before marking story as fully complete

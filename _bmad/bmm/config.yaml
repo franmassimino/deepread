@@ -16,3 +16,34 @@ user_name: Francisco
 communication_language: English
 document_output_language: English
 output_folder: "{project-root}/_bmad-output"
+
+# Git Workflow Configuration
+# ==========================
+# MANDATORY rules for Dev Agent during story implementation
+
+git_workflow:
+  # Protected branches - NEVER commit directly to these
+  protected_branches:
+    - master
+    - main
+
+  # Branch naming pattern for stories
+  branch_pattern: "feature/story-{story-id}-{short-description}"
+
+  # Story implementation workflow
+  on_story_start:
+    - checkout master
+    - pull latest from origin
+    - create new feature branch following branch_pattern
+
+  on_story_complete:
+    - commit all changes
+    - push branch to origin
+    - create PR targeting master
+    - NEVER merge directly to master
+
+  # PR settings
+  pull_request:
+    required: true
+    target_branch: master
+    title_format: "feat: Story {story-id} - {story-title}"

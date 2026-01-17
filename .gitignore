@@ -59,3 +59,7 @@ Thumbs.db
 
 # Temporary Claude files
 tmpclaude-*
+
+# Local file storage (PDFs, images)
+/storage/
+/test-storage/

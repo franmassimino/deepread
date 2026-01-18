@@ -6,8 +6,8 @@ import { Progress } from '@/components/ui/progress'
 import { BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
-import { UploadPdfDialog } from '@/components/upload-pdf-dialog'
-import { BookUploadItem } from '@/components/book-upload-item'
+import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
+import { BookUploadItem } from '@/components/upload/book-upload-item'
 import { useUploadStore } from '@/lib/stores/upload-store'
 import { useBooksStore } from '@/lib/stores/books-store'
 
@@ -31,6 +31,8 @@ const statusConfig = {
 
 export function Library() {
   const uploadingBooks = useUploadStore((state) => state.uploadingBooks);
+  const cancelUpload = useUploadStore((state) => state.cancelUpload);
+  const retryUpload = useUploadStore((state) => state.retryUpload);
   const dynamicBooks = useBooksStore((state) => state.books);
 
   const allBooks = [...mockBooks, ...dynamicBooks];
@@ -58,15 +60,22 @@ export function Library() {
 
         {/* Books Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Uploading books */}
-          {uploadingBooks.map((book) => (
-            <BookUploadItem
-              key={book.id}
-              fileName={book.fileName}
-              progress={book.progress}
-              currentStep={book.currentStep}
-            />
-          ))}
+          {/* Uploading books (filter out 'ready' status to avoid duplicates with library) */}
+          {uploadingBooks
+            .filter((book) => book.status !== 'ready')
+            .map((book) => (
+              <BookUploadItem
+                key={book.id}
+                id={book.id}
+                fileName={book.fileName}
+                progress={book.progress}
+                currentStep={book.currentStep}
+                status={book.status}
+                error={book.error}
+                onCancel={cancelUpload}
+                onRetry={retryUpload}
+              />
+            ))}
 
           {/* Regular books (mock + dynamic) */}
           {allBooks.map((book) => (

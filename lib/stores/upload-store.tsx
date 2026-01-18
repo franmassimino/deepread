@@ -4,55 +4,68 @@ import { create } from 'zustand';
 import { toast } from 'sonner';
 import { useBooksStore } from './books-store';
 
+export type UploadStatus = 'uploading' | 'processing' | 'ready' | 'error' | 'cancelled';
+
 export interface UploadingBook {
   id: string;
   fileName: string;
   progress: number;
   currentStep: number;
   file: File;
+  status: UploadStatus;
+  error: string | null;
+  xhr: XMLHttpRequest | null;
+  bookId: string | null;
 }
 
 interface UploadStore {
   uploadingBooks: UploadingBook[];
-  addUpload: (file: File) => void;
-  updateUpload: (id: string, progress: number, currentStep: number) => void;
-  removeUpload: (id: string) => void;
   startUpload: (file: File) => void;
+  cancelUpload: (id: string) => void;
+  retryUpload: (id: string) => void;
+  removeUpload: (id: string) => void;
+  updateUpload: (id: string, updates: Partial<UploadingBook>) => void;
 }
 
-const uploadSteps = [
-  { label: "Uploading file...", duration: 1000 },
-  { label: "Parsing PDF...", duration: 1500 },
-  { label: "Extracting text...", duration: 1200 },
-  { label: "Generating metadata...", duration: 1000 },
+// Processing steps shown during "AI processing" simulation
+const processingSteps = [
+  { label: "Parsing PDF...", duration: 800 },
+  { label: "Extracting text...", duration: 1000 },
+  { label: "Generating metadata...", duration: 1200 },
   { label: "Creating chapters...", duration: 800 },
-  { label: "Finalizing...", duration: 500 },
+  { label: "Finalizing...", duration: 600 },
 ];
+
+/**
+ * Maps API error status codes to user-friendly messages
+ */
+function getErrorMessage(status: number, responseText: string): string {
+  try {
+    const response = JSON.parse(responseText);
+    if (response.error) return response.error;
+  } catch {
+    // Ignore parse errors
+  }
+
+  switch (status) {
+    case 400:
+      return 'Invalid PDF file';
+    case 413:
+      return 'File exceeds 50MB limit';
+    case 500:
+      return 'Server error - please try again';
+    default:
+      return 'Upload failed - please try again';
+  }
+}
 
 export const useUploadStore = create<UploadStore>((set, get) => ({
   uploadingBooks: [],
 
-  addUpload: (file: File) => {
-    const id = `${file.name}-${Date.now()}`;
-    const newUpload: UploadingBook = {
-      id,
-      fileName: file.name,
-      progress: 0,
-      currentStep: 0,
-      file,
-    };
-
-    set((state) => ({
-      uploadingBooks: [...state.uploadingBooks, newUpload],
-    }));
-
-    return id;
-  },
-
-  updateUpload: (id: string, progress: number, currentStep: number) => {
+  updateUpload: (id: string, updates: Partial<UploadingBook>) => {
     set((state) => ({
       uploadingBooks: state.uploadingBooks.map((book) =>
-        book.id === id ? { ...book, progress, currentStep } : book
+        book.id === id ? { ...book, ...updates } : book
       ),
     }));
   },
@@ -63,67 +76,179 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
     }));
   },
 
-  startUpload: async (file: File) => {
+  cancelUpload: (id: string) => {
+    const book = get().uploadingBooks.find((b) => b.id === id);
+    if (book?.xhr && book.status === 'uploading') {
+      book.xhr.abort();
+      get().updateUpload(id, { status: 'cancelled', error: 'Upload cancelled' });
+
+      // Remove from list after a brief delay
+      setTimeout(() => {
+        get().removeUpload(id);
+      }, 1500);
+
+      toast.info(`Upload cancelled: "${book.fileName}"`);
+    }
+  },
+
+  retryUpload: (id: string) => {
+    const book = get().uploadingBooks.find((b) => b.id === id);
+    if (book && (book.status === 'error' || book.status === 'cancelled')) {
+      // Remove the failed upload
+      get().removeUpload(id);
+      // Start a new upload with the same file
+      get().startUpload(book.file);
+    }
+  },
+
+  startUpload: (file: File) => {
     const id = `${file.name}-${Date.now()}`;
+    const xhr = new XMLHttpRequest();
+
     const newUpload: UploadingBook = {
       id,
       fileName: file.name,
       progress: 0,
       currentStep: 0,
       file,
+      status: 'uploading',
+      error: null,
+      xhr,
+      bookId: null,
     };
 
-    // Add to store
+    // Add to store immediately
     set((state) => ({
       uploadingBooks: [...state.uploadingBooks, newUpload],
     }));
 
-    try {
-      // Simulate upload process
-      for (let i = 0; i < uploadSteps.length; i++) {
-        const stepProgress = ((i + 1) / uploadSteps.length) * 100;
-        const startProgress = (i / uploadSteps.length) * 100;
-        const duration = uploadSteps[i].duration;
-        const steps = 20;
-        const increment = (stepProgress - startProgress) / steps;
-
-        for (let j = 0; j <= steps; j++) {
-          await new Promise((resolve) => setTimeout(resolve, duration / steps));
-          get().updateUpload(id, startProgress + (increment * j), i);
-        }
+    // Track upload progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const progress = Math.round((event.loaded / event.total) * 100);
+        get().updateUpload(id, { progress, currentStep: 0 });
       }
+    };
 
-      // Success! Add book to library
-      get().removeUpload(id);
+    // Handle successful upload completion
+    xhr.onload = () => {
+      if (xhr.status === 201) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          const bookId = response.bookId;
 
-      // Generate a random color for the book cover
-      const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+          // Mark as processing and start simulated AI processing
+          get().updateUpload(id, {
+            status: 'processing',
+            progress: 100,
+            currentStep: 1,
+            bookId
+          });
 
-      // Add the book to the books store
-      const bookTitle = file.name.replace('.pdf', '');
-      useBooksStore.getState().addBook({
-        id: `book-${Date.now()}`,
-        title: bookTitle,
-        author: 'Unknown Author',
-        progress: 0,
-        status: 'reading',
-        lastActivity: 'Just added',
-        coverColor: randomColor,
+          // Simulate AI processing steps
+          // TODO: Replace with real SSE/polling in Epic 3
+          simulateProcessing(id, bookId, file.name, get);
+
+        } catch {
+          get().updateUpload(id, {
+            status: 'error',
+            error: 'Invalid server response'
+          });
+        }
+      } else {
+        // Handle error responses
+        const errorMessage = getErrorMessage(xhr.status, xhr.responseText);
+        get().updateUpload(id, {
+          status: 'error',
+          error: errorMessage
+        });
+
+        toast.error(`Failed to upload "${file.name}"`, {
+          description: errorMessage,
+          duration: 5000,
+        });
+      }
+    };
+
+    // Handle network errors
+    xhr.onerror = () => {
+      get().updateUpload(id, {
+        status: 'error',
+        error: 'Upload failed - check connection'
       });
 
-      toast.success(`"${bookTitle}" uploaded successfully!`, {
-        description: 'Your book is now available in your library',
-        duration: 4000,
-      });
-
-    } catch (error) {
-      // Error handling
-      get().removeUpload(id);
       toast.error(`Failed to upload "${file.name}"`, {
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        description: 'Network error - check your connection',
         duration: 5000,
       });
-    }
+    };
+
+    // Handle abort (cancel)
+    xhr.onabort = () => {
+      // Already handled in cancelUpload
+    };
+
+    // Send the request
+    const formData = new FormData();
+    formData.append('file', file);
+    xhr.open('POST', '/api/upload');
+    xhr.send(formData);
   },
 }));
+
+/**
+ * Simulates AI processing with visual progress steps.
+ * TODO: Replace with real SSE/polling when Epic 3 is implemented.
+ */
+async function simulateProcessing(
+  uploadId: string,
+  bookId: string,
+  fileName: string,
+  get: () => UploadStore
+) {
+  const bookTitle = fileName.replace('.pdf', '');
+
+  // Run through each processing step
+  for (let i = 0; i < processingSteps.length; i++) {
+    const step = processingSteps[i];
+
+    // Check if upload was cancelled
+    const currentBook = get().uploadingBooks.find(b => b.id === uploadId);
+    if (!currentBook || currentBook.status === 'cancelled') {
+      return;
+    }
+
+    // Update to current step (step 1 = parsing, step 2 = extracting, etc.)
+    // currentStep 0 is "uploading", so processing steps start at 1
+    get().updateUpload(uploadId, { currentStep: i + 1 });
+
+    await new Promise(resolve => setTimeout(resolve, step.duration));
+  }
+
+  // Mark as ready
+  get().updateUpload(uploadId, { status: 'ready', currentStep: processingSteps.length });
+
+  // Add book to library
+  const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+  useBooksStore.getState().addBook({
+    id: bookId,
+    title: bookTitle,
+    author: 'Unknown Author',
+    progress: 0,
+    status: 'reading',
+    lastActivity: 'Just added',
+    coverColor: randomColor,
+  });
+
+  toast.success(`"${bookTitle}" is ready!`, {
+    description: 'Your book is now available in your library',
+    duration: 4000,
+  });
+
+  // Remove from uploading list after brief delay
+  setTimeout(() => {
+    get().removeUpload(uploadId);
+  }, 1000);
+}

@@ -1,4 +1,4 @@
-import { storageService, getPdfPath, getImagePath } from '@/src/lib/services/storage';
+import { storageService, getPdfPath, getImagePath } from '@/lib/services/storage';
 
 async function testStorageService() {
   console.log('\n=== Testing Storage Service ===\n');

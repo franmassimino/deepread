@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest';
-import { storageService, getPdfPath, getImagePath } from '@/src/lib/services/storage';
+import { storageService, getPdfPath, getImagePath } from '@/lib/services/storage';
 import { rm } from 'fs/promises';
 import { join } from 'path';
 

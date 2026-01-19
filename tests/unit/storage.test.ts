@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { LocalStorageService, StorageError } from '@/src/lib/services/storage';
+import { LocalStorageService, StorageError } from '@/lib/services/storage';
 import { join } from 'path';
 import { rm } from 'fs/promises';
 

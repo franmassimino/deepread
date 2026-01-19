@@ -14,27 +14,38 @@ function isPDF(buffer: Buffer): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[Upload] --- START ---');
+  console.log('[Upload] NODE_ENV:', process.env.NODE_ENV);
+
   try {
+    console.log('[Upload] Parsing formData...');
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
     if (!file) {
+      console.log('[Upload] ERROR: No file provided');
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
       );
     }
 
+    console.log('[Upload] File received:', file.name, 'size:', file.size);
+
     if (file.size > MAX_FILE_SIZE) {
+      console.log('[Upload] ERROR: File too large');
       return NextResponse.json(
         { error: 'File exceeds 50MB limit' },
         { status: 413 }
       );
     }
 
+    console.log('[Upload] Converting to buffer...');
     const buffer = Buffer.from(await file.arrayBuffer());
+    console.log('[Upload] Buffer length:', buffer.length);
 
     if (!isPDF(buffer)) {
+      console.log('[Upload] ERROR: Invalid PDF magic bytes');
       return NextResponse.json(
         { error: 'Invalid PDF file' },
         { status: 400 }
@@ -43,19 +54,24 @@ export async function POST(request: NextRequest) {
 
     const bookId = crypto.randomUUID();
     const pdfPath = `pdfs/${bookId}/${file.name}`;
+    console.log('[Upload] Saving to storage:', pdfPath);
 
     await storageService.saveFile(pdfPath, buffer);
+    console.log('[Upload] Storage save OK');
 
+    console.log('[Upload] Creating DB record...');
     const book = await prisma.book.create({
       data: {
         id: bookId,
         title: file.name.replace('.pdf', ''),
         pdfPath,
-        summary: '', // Will be populated by AI in Epic 4
+        summary: '',
         status: 'PROCESSING',
       },
     });
+    console.log('[Upload] DB record created:', book.id);
 
+    console.log('[Upload] --- SUCCESS ---');
     return NextResponse.json(
       {
         success: true,
@@ -64,7 +80,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('[Upload] --- ERROR ---');
+    console.error('[Upload] Error:', error);
     return NextResponse.json(
       { error: 'Upload failed' },
       { status: 500 }

@@ -9,8 +9,8 @@ export type UploadStatus = 'uploading' | 'processing' | 'ready' | 'error' | 'can
 export interface UploadingBook {
   id: string;
   fileName: string;
-  progress: number;
-  currentStep: number;
+  progress: number;        // Unified progress: 0-100% (upload = 0-30%, processing = 30-100%)
+  currentStep: number;     // Current processing step (0 = uploading, 1-5 = processing steps)
   file: File;
   status: UploadStatus;
   error: string | null;
@@ -26,6 +26,11 @@ interface UploadStore {
   removeUpload: (id: string) => void;
   updateUpload: (id: string, updates: Partial<UploadingBook>) => void;
 }
+
+// Progress allocation: upload = 0-30%, processing = 30-100%
+const UPLOAD_PROGRESS_MAX = 30;
+const PROCESSING_PROGRESS_START = 30;
+const PROCESSING_PROGRESS_RANGE = 70; // 100 - 30 = 70%
 
 // Processing steps shown during "AI processing" simulation
 const processingSteps = [
@@ -122,10 +127,11 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
       uploadingBooks: [...state.uploadingBooks, newUpload],
     }));
 
-    // Track upload progress
+    // Track upload progress (0-30% of total)
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        const progress = Math.round((event.loaded / event.total) * 100);
+        const uploadPercent = (event.loaded / event.total);
+        const progress = Math.round(uploadPercent * UPLOAD_PROGRESS_MAX);
         get().updateUpload(id, { progress, currentStep: 0 });
       }
     };
@@ -140,7 +146,7 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
           // Mark as processing and start simulated AI processing
           get().updateUpload(id, {
             status: 'processing',
-            progress: 100,
+            progress: UPLOAD_PROGRESS_MAX, // Upload complete = 30%
             currentStep: 1,
             bookId
           });
@@ -218,15 +224,21 @@ async function simulateProcessing(
       return;
     }
 
-    // Update to current step (step 1 = parsing, step 2 = extracting, etc.)
-    // currentStep 0 is "uploading", so processing steps start at 1
-    get().updateUpload(uploadId, { currentStep: i + 1 });
+    // Calculate unified progress: 30% + (step / totalSteps) * 70%
+    const stepProgress = PROCESSING_PROGRESS_START +
+      ((i + 1) / processingSteps.length) * PROCESSING_PROGRESS_RANGE;
+
+    // Update to current step and unified progress
+    get().updateUpload(uploadId, {
+      currentStep: i + 1,
+      progress: Math.round(stepProgress)
+    });
 
     await new Promise(resolve => setTimeout(resolve, step.duration));
   }
 
-  // Mark as ready
-  get().updateUpload(uploadId, { status: 'ready', currentStep: processingSteps.length });
+  // Mark as ready (100%)
+  get().updateUpload(uploadId, { status: 'ready', currentStep: processingSteps.length, progress: 100 });
 
   // Add book to library
   const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'];

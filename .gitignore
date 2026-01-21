@@ -63,3 +63,7 @@ tmpclaude-*
 # Local file storage (PDFs, images)
 /storage/
 /test-storage/
+
+# SQLite database (no longer used - migrated to Neon PostgreSQL)
+*.db
+prisma/dev.db

@@ -115,16 +115,9 @@ export function BookUploadItem({
     return processingSteps[currentStep] || 'Processing...';
   };
 
-  // Calculate visual progress (for processing, show progress through steps)
+  // Progress is now unified (0-100%) from the store
+  // Upload = 0-30%, Processing = 30-100%
   const getVisualProgress = () => {
-    if (status === 'uploading') {
-      return progress;
-    }
-    if (status === 'processing' || status === 'ready') {
-      // During processing, show progress based on current step
-      const stepProgress = ((currentStep + 1) / processingSteps.length) * 100;
-      return Math.min(stepProgress, 100);
-    }
     return progress;
   };
 

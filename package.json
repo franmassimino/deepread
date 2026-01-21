@@ -18,13 +18,9 @@
     "db:studio": "prisma studio",
     "db:push": "prisma db push"
   },
-  "comments": {
-    "build:with-tests": "TODO: Re-enable this as default 'build' script once Postgres is configured in production. Tests currently skip in deployment because SQLite DB doesn't exist in Vercel."
-  },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
     "@neondatabase/serverless": "^1.0.2",
-    "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/adapter-neon": "^7.3.0",
     "@prisma/client": "^7.2.0",
     "bullmq": "^5.66.5",
@@ -46,7 +42,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.19.29",
     "@types/react": "^19",
     "@types/react-dom": "^19",

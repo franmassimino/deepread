@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,11 @@ import { X } from "lucide-react";
 
 const MAX_FILES = 3;
 
-export function UploadPdfDialog() {
+interface UploadPdfDialogProps {
+  trigger?: ReactNode;
+}
+
+export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
   const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
@@ -86,9 +90,11 @@ export function UploadPdfDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="py-4 px-6">
-          Upload a book
-        </Button>
+        {trigger || (
+          <Button size="sm" className="py-4 px-6">
+            Upload a book
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="w-auto max-w-[1200px]">
         <DialogHeader>

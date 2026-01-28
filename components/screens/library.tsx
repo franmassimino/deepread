@@ -1,47 +1,62 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Library as LibraryIcon, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
 import { BookUploadItem } from '@/components/upload/book-upload-item'
 import { useUploadStore } from '@/lib/stores/upload-store'
-import { useBooksStore } from '@/lib/stores/books-store'
-
-const mockBooks = [
-  {
-    id: 'designing-data-intensive-apps',
-    title: 'Designing Data-Intensive Applications',
-    author: 'Martin Kleppmann',
-    progress: 25,
-    status: 'reading',
-    lastActivity: 'Chapter 3: Storage and Retrieval',
-    coverColor: 'bg-blue-100',
-  },
-]
+import { useBooks, BookFromAPI } from '@/lib/hooks/use-books'
 
 const statusConfig = {
-  reading: { label: 'Reading', color: 'bg-blue-500' },
-  consolidating: { label: 'Consolidating', color: 'bg-amber-500' },
-  completed: { label: 'Completed', color: 'bg-green-500' },
+  PROCESSING: { label: 'Processing', color: 'bg-amber-500', uiStatus: 'reading' },
+  READY: { label: 'Ready', color: 'bg-green-500', uiStatus: 'completed' },
+  ERROR: { label: 'Error', color: 'bg-red-500', uiStatus: 'reading' },
+}
+
+const coverColors = [
+  'bg-blue-100', 'bg-purple-100', 'bg-green-100',
+  'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'
+]
+
+function getBookColor(bookId: string): string {
+  // Consistent color based on book ID
+  let hash = 0;
+  for (let i = 0; i < bookId.length; i++) {
+    hash = ((hash << 5) - hash) + bookId.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return coverColors[Math.abs(hash) % coverColors.length];
 }
 
 export function Library() {
-  const uploadingBooks = useUploadStore((state) => state.uploadingBooks);
-  const cancelUpload = useUploadStore((state) => state.cancelUpload);
-  const retryUpload = useUploadStore((state) => state.retryUpload);
-  const dynamicBooks = useBooksStore((state) => state.books);
+  const uploadingBooks = useUploadStore((state) => state.uploadingBooks)
+  const cancelUpload = useUploadStore((state) => state.cancelUpload)
+  const retryUpload = useUploadStore((state) => state.retryUpload)
 
-  const allBooks = [...mockBooks, ...dynamicBooks];
-  const totalBooksInProgress = allBooks.filter(b => b.status === 'reading').length + uploadingBooks.length;
+  const { books, isLoading, refetch } = useBooks()
+
+  // Auto-refresh when uploads complete
+  useEffect(() => {
+    const completedCount = uploadingBooks.filter(b => b.status === 'ready').length
+    if (completedCount > 0) {
+      // Refetch after a short delay to ensure DB is updated
+      const timer = setTimeout(() => refetch(), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [uploadingBooks, refetch])
+
+  const activeUploads = uploadingBooks.filter(book => book.status !== 'ready')
+  const totalBooks = books.length
+  const processingBooks = books.filter(b => b.status === 'PROCESSING').length
 
   return (
     <div className="min-h-screen bg-neutral-50">
       <AppHeader />
-      {/* Main Content */}
       <main className="mx-auto max-w-7xl py-8 px-[5%]">
         <div className="mb-8 flex items-start justify-between">
           <div>
@@ -49,21 +64,56 @@ export function Library() {
               Your Library
             </h2>
             <p className="mt-2 text-neutral-600">
-              {totalBooksInProgress} {totalBooksInProgress === 1 ? 'book' : 'books'} in progress
-              {uploadingBooks.length > 0 && (
-                <span className="text-neutral-500"> • {uploadingBooks.length} uploading</span>
+              {totalBooks} {totalBooks === 1 ? 'book' : 'books'}
+              {processingBooks > 0 && (
+                <span className="text-neutral-500"> ({processingBooks} processing)</span>
+              )}
+              {activeUploads.length > 0 && (
+                <span className="text-neutral-500"> &bull; {activeUploads.length} uploading</span>
               )}
             </p>
           </div>
           <UploadPdfDialog />
         </div>
 
+        {/* Loading State */}
+        {isLoading && activeUploads.length === 0 && (
+          <div className="flex items-center justify-center py-24">
+            <div className="text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
+              <p className="mt-4 text-neutral-600">Loading your library...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && books.length === 0 && activeUploads.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="rounded-full bg-neutral-100 p-6">
+              <LibraryIcon className="h-12 w-12 text-neutral-400" />
+            </div>
+            <h3 className="mt-6 text-lg font-medium text-neutral-900">No books yet</h3>
+            <p className="mt-2 max-w-sm text-center text-neutral-600">
+              Upload your first PDF to start building your library.
+            </p>
+            <div className="mt-6">
+              <UploadPdfDialog
+                trigger={
+                  <button className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-800">
+                    <Upload className="h-4 w-4" />
+                    Upload PDF
+                  </button>
+                }
+              />
+            </div>
+          </div>
+        )}
+
         {/* Books Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Uploading books (filter out 'ready' status to avoid duplicates with library) */}
-          {uploadingBooks
-            .filter((book) => book.status !== 'ready')
-            .map((book) => (
+        {(!isLoading || activeUploads.length > 0) && (books.length > 0 || activeUploads.length > 0) && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Uploading books */}
+            {activeUploads.map((book) => (
               <BookUploadItem
                 key={book.id}
                 id={book.id}
@@ -77,62 +127,73 @@ export function Library() {
               />
             ))}
 
-          {/* Regular books (mock + dynamic) */}
-          {allBooks.map((book) => (
-            <Link key={book.id} href={`/book/${book.id}`} className="h-full">
-              <Card className="group cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
-                <CardContent className="flex-1 flex flex-col">
-                  {/* Book Cover Placeholder */}
-                  <div
-                    className={`mb-4 flex h-48 items-end rounded-lg ${book.coverColor} p-4 transition-transform group-hover:scale-[1.02] shrink-0`}
-                  >
-                    <BookOpen className="h-8 w-8 text-neutral-600/40" />
-                  </div>
-
-                  {/* Book Info */}
-                  <div className="space-y-3 flex-1 flex flex-col">
-                    <div className="shrink-0">
-                      <h3 className="font-semibold leading-tight text-neutral-900 line-clamp-2">
-                        {book.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-neutral-600">{book.author}</p>
-                    </div>
-
-                    {/* Progress */}
-                    <div className="space-y-2 shrink-0">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-600">Overall progress</span>
-                        <span className="font-medium text-neutral-900">{book.progress}%</span>
-                      </div>
-                      <Progress value={book.progress} className="h-1.5" />
-                    </div>
-
-                    {/* Spacer */}
-                    <div className="flex-1"></div>
-
-                    {/* Status & Last Activity */}
-                    <div className="shrink-0">
-                      <div className="flex items-center justify-between pb-2">
-                        <Badge
-                          variant="secondary"
-                          className={`${
-                            statusConfig[book.status as keyof typeof statusConfig].color
-                          } border-0 text-white`}
-                        >
-                          {statusConfig[book.status as keyof typeof statusConfig].label}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-neutral-500 line-clamp-1">
-                        {book.lastActivity}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+            {/* Books from database */}
+            {books.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
+  )
+}
+
+function BookCard({ book }: { book: BookFromAPI }) {
+  const config = statusConfig[book.status]
+  const coverColor = getBookColor(book.id)
+  const progress = book.status === 'READY' ? 0 : book.status === 'PROCESSING' ? 0 : 0
+
+  return (
+    <Link href={`/book/${book.id}`} className="h-full">
+      <Card className="group cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
+        <CardContent className="flex-1 flex flex-col">
+          {/* Book Cover Placeholder */}
+          <div
+            className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover:scale-[1.02] shrink-0`}
+          >
+            <BookOpen className="h-8 w-8 text-neutral-600/40" />
+          </div>
+
+          {/* Book Info */}
+          <div className="space-y-3 flex-1 flex flex-col">
+            <div className="shrink-0">
+              <h3 className="font-semibold leading-tight text-neutral-900 line-clamp-2">
+                {book.title}
+              </h3>
+              <p className="mt-1 text-sm text-neutral-600">
+                {book.author || 'Unknown Author'}
+              </p>
+            </div>
+
+            {/* Progress */}
+            <div className="space-y-2 shrink-0">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-neutral-600">Reading progress</span>
+                <span className="font-medium text-neutral-900">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-1.5" />
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1"></div>
+
+            {/* Status */}
+            <div className="shrink-0">
+              <div className="flex items-center justify-between pb-2">
+                <Badge
+                  variant="secondary"
+                  className={`${config.color} border-0 text-white`}
+                >
+                  {config.label}
+                </Badge>
+              </div>
+              <p className="text-xs text-neutral-500">
+                Added {new Date(book.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }

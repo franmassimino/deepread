@@ -20,12 +20,18 @@ export interface UploadingBook {
 
 interface UploadStore {
   uploadingBooks: UploadingBook[];
+  pendingUploads: File[];
   startUpload: (file: File) => void;
   cancelUpload: (id: string) => void;
   retryUpload: (id: string) => void;
   removeUpload: (id: string) => void;
   updateUpload: (id: string, updates: Partial<UploadingBook>) => void;
+  processQueue: () => void;
+  _startUploadImmediate: (file: File) => void;
 }
+
+// Maximum number of concurrent uploads
+const MAX_CONCURRENT_UPLOADS = 3;
 
 // Progress allocation: upload = 0-30%, processing = 30-100%
 const UPLOAD_PROGRESS_MAX = 30;
@@ -66,6 +72,7 @@ function getErrorMessage(status: number, responseText: string): string {
 
 export const useUploadStore = create<UploadStore>((set, get) => ({
   uploadingBooks: [],
+  pendingUploads: [],
 
   updateUpload: (id: string, updates: Partial<UploadingBook>) => {
     set((state) => ({
@@ -93,6 +100,9 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
       }, 1500);
 
       toast.info(`Upload cancelled: "${book.fileName}"`);
+
+      // Process next queued upload
+      get().processQueue();
     }
   },
 
@@ -107,6 +117,47 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
   },
 
   startUpload: (file: File) => {
+    const { uploadingBooks, pendingUploads } = get();
+
+    // Count active uploads (uploading or processing status)
+    const activeUploads = uploadingBooks.filter(
+      book => book.status === 'uploading' || book.status === 'processing'
+    ).length;
+
+    // If we have available slots, start immediately
+    if (activeUploads < MAX_CONCURRENT_UPLOADS) {
+      get()._startUploadImmediate(file);
+    } else {
+      // Otherwise, add to pending queue
+      set({ pendingUploads: [...pendingUploads, file] });
+    }
+  },
+
+  processQueue: () => {
+    const { uploadingBooks, pendingUploads } = get();
+
+    // Count active uploads (uploading or processing status)
+    const activeUploads = uploadingBooks.filter(
+      book => book.status === 'uploading' || book.status === 'processing'
+    ).length;
+
+    // Calculate how many slots are available
+    const availableSlots = MAX_CONCURRENT_UPLOADS - activeUploads;
+
+    // Start uploads for available slots
+    if (availableSlots > 0 && pendingUploads.length > 0) {
+      const filesToStart = pendingUploads.slice(0, availableSlots);
+      const remainingPending = pendingUploads.slice(availableSlots);
+
+      // Update pending queue
+      set({ pendingUploads: remainingPending });
+
+      // Start each upload immediately (bypass queue check)
+      filesToStart.forEach(file => get()._startUploadImmediate(file));
+    }
+  },
+
+  _startUploadImmediate: (file: File) => {
     const id = `${file.name}-${Date.now()}`;
     const xhr = new XMLHttpRequest();
 
@@ -155,11 +206,16 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
           // TODO: Replace with real SSE/polling in Epic 3
           simulateProcessing(id, bookId, file.name, get);
 
+          // Note: processQueue is called when processing completes, not here
+
         } catch {
           get().updateUpload(id, {
             status: 'error',
             error: 'Invalid server response'
           });
+
+          // Process next queued upload
+          get().processQueue();
         }
       } else {
         // Handle error responses
@@ -173,6 +229,9 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
           description: errorMessage,
           duration: 5000,
         });
+
+        // Process next queued upload
+        get().processQueue();
       }
     };
 
@@ -187,6 +246,9 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
         description: 'Network error - check your connection',
         duration: 5000,
       });
+
+      // Process next queued upload
+      get().processQueue();
     };
 
     // Handle abort (cancel)
@@ -263,4 +325,7 @@ async function simulateProcessing(
   setTimeout(() => {
     get().removeUpload(uploadId);
   }, 1000);
+
+  // Process next queued upload (processing is complete)
+  get().processQueue();
 }

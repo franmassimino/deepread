@@ -1,6 +1,6 @@
 # Story 2.2: Upload Progress Tracking UI
 
-Status: review
+Status: done
 
 ## Story
 

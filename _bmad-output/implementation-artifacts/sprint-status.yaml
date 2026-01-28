@@ -50,8 +50,8 @@ development_status:
 
   epic-2: in-progress
   2-1-basic-file-upload-api: done
-  2-2-upload-progress-tracking-ui: review
-  2-3-multi-file-upload-support: backlog
+  2-2-upload-progress-tracking-ui: done
+  2-3-multi-file-upload-support: review
   2-4-upload-error-handling: backlog
   2-5-library-view-with-uploaded-books: backlog
   2-6-delete-book-from-library: backlog

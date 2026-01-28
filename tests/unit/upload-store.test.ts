@@ -320,4 +320,212 @@ describe('Upload Store', () => {
       expect(state.uploadingBooks[1].progress).toBe(75); // Second upload updated
     });
   });
+
+  describe('Upload Queue Management', () => {
+    it('should limit concurrent uploads to 3', () => {
+      const file1 = new File(['test 1'], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File(['test 2'], 'test2.pdf', { type: 'application/pdf' });
+      const file3 = new File(['test 3'], 'test3.pdf', { type: 'application/pdf' });
+      const file4 = new File(['test 4'], 'test4.pdf', { type: 'application/pdf' });
+
+      // Start 4 uploads
+      useUploadStore.getState().startUpload(file1);
+      useUploadStore.getState().startUpload(file2);
+      useUploadStore.getState().startUpload(file3);
+      useUploadStore.getState().startUpload(file4);
+
+      const state = useUploadStore.getState();
+
+      // Only 3 should be actively uploading
+      expect(state.uploadingBooks).toHaveLength(3);
+      expect(state.uploadingBooks[0].fileName).toBe('test1.pdf');
+      expect(state.uploadingBooks[1].fileName).toBe('test2.pdf');
+      expect(state.uploadingBooks[2].fileName).toBe('test3.pdf');
+
+      // 4th should be in pending queue
+      expect(state.pendingUploads).toHaveLength(1);
+      expect(state.pendingUploads[0].name).toBe('test4.pdf');
+    });
+
+    it('should start queued upload when one completes', async () => {
+      const file1 = new File(['test 1'], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File(['test 2'], 'test2.pdf', { type: 'application/pdf' });
+      const file3 = new File(['test 3'], 'test3.pdf', { type: 'application/pdf' });
+      const file4 = new File(['test 4'], 'test4.pdf', { type: 'application/pdf' });
+
+      // Start 4 uploads - 3 active, 1 pending
+      useUploadStore.getState().startUpload(file1);
+      useUploadStore.getState().startUpload(file2);
+      useUploadStore.getState().startUpload(file3);
+      useUploadStore.getState().startUpload(file4);
+
+      // Verify initial state
+      expect(useUploadStore.getState().uploadingBooks).toHaveLength(3);
+      expect(useUploadStore.getState().pendingUploads).toHaveLength(1);
+
+      // Complete first upload (this triggers processQueue)
+      const xhr1 = MockXHR.instances[0];
+      xhr1.simulateSuccess('book-1');
+
+      // Wait for processing simulation to complete and trigger processQueue
+      await vi.waitFor(() => {
+        const state = useUploadStore.getState();
+        return state.uploadingBooks.some(b => b.fileName === 'test4.pdf');
+      }, { timeout: 100 });
+
+      const state = useUploadStore.getState();
+
+      // 4th upload should now be active
+      expect(state.pendingUploads).toHaveLength(0);
+      expect(state.uploadingBooks.some(b => b.fileName === 'test4.pdf')).toBe(true);
+    });
+
+    it('should handle 5+ uploads with proper queueing', () => {
+      const files = Array.from({ length: 6 }, (_, i) =>
+        new File([`test ${i + 1}`], `test${i + 1}.pdf`, { type: 'application/pdf' })
+      );
+
+      // Start 6 uploads
+      files.forEach(file => useUploadStore.getState().startUpload(file));
+
+      const state = useUploadStore.getState();
+
+      // 3 active, 3 pending
+      expect(state.uploadingBooks).toHaveLength(3);
+      expect(state.pendingUploads).toHaveLength(3);
+
+      // Verify queue order (FIFO)
+      expect(state.pendingUploads[0].name).toBe('test4.pdf');
+      expect(state.pendingUploads[1].name).toBe('test5.pdf');
+      expect(state.pendingUploads[2].name).toBe('test6.pdf');
+    });
+
+    it('should start next queued upload when one fails', async () => {
+      const file1 = new File(['test 1'], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File(['test 2'], 'test2.pdf', { type: 'application/pdf' });
+      const file3 = new File(['test 3'], 'test3.pdf', { type: 'application/pdf' });
+      const file4 = new File(['test 4'], 'test4.pdf', { type: 'application/pdf' });
+
+      // Start 4 uploads
+      useUploadStore.getState().startUpload(file1);
+      useUploadStore.getState().startUpload(file2);
+      useUploadStore.getState().startUpload(file3);
+      useUploadStore.getState().startUpload(file4);
+
+      // Fail first upload (this should trigger processQueue)
+      const xhr1 = MockXHR.instances[0];
+      xhr1.simulateError(500, 'Server error');
+
+      await vi.waitFor(() => {
+        const state = useUploadStore.getState();
+        return state.uploadingBooks.some(b => b.fileName === 'test4.pdf');
+      }, { timeout: 100 });
+
+      const state = useUploadStore.getState();
+
+      // 4th upload should be active, pending should be empty
+      expect(state.pendingUploads).toHaveLength(0);
+      expect(state.uploadingBooks.some(b => b.fileName === 'test4.pdf')).toBe(true);
+
+      // Failed upload should still be in list with error state
+      expect(state.uploadingBooks.some(b => b.fileName === 'test1.pdf' && b.status === 'error')).toBe(true);
+    });
+
+    it('should start next queued upload when one is cancelled', async () => {
+      const file1 = new File(['test 1'], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File(['test 2'], 'test2.pdf', { type: 'application/pdf' });
+      const file3 = new File(['test 3'], 'test3.pdf', { type: 'application/pdf' });
+      const file4 = new File(['test 4'], 'test4.pdf', { type: 'application/pdf' });
+
+      // Start 4 uploads
+      useUploadStore.getState().startUpload(file1);
+      useUploadStore.getState().startUpload(file2);
+      useUploadStore.getState().startUpload(file3);
+      useUploadStore.getState().startUpload(file4);
+
+      const firstUploadId = useUploadStore.getState().uploadingBooks[0].id;
+
+      // Cancel first upload (this should trigger processQueue)
+      useUploadStore.getState().cancelUpload(firstUploadId);
+
+      await vi.waitFor(() => {
+        const state = useUploadStore.getState();
+        return state.uploadingBooks.some(b => b.fileName === 'test4.pdf');
+      }, { timeout: 100 });
+
+      const state = useUploadStore.getState();
+
+      // 4th upload should be active, pending should be empty
+      expect(state.pendingUploads).toHaveLength(0);
+      expect(state.uploadingBooks.some(b => b.fileName === 'test4.pdf')).toBe(true);
+    });
+
+    it('should handle uploads completing out of order', async () => {
+      const file1 = new File(['test 1'], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File(['test 2'], 'test2.pdf', { type: 'application/pdf' });
+      const file3 = new File(['test 3'], 'test3.pdf', { type: 'application/pdf' });
+      const file4 = new File(['test 4'], 'test4.pdf', { type: 'application/pdf' });
+      const file5 = new File(['test 5'], 'test5.pdf', { type: 'application/pdf' });
+
+      // Start 5 uploads - 3 active, 2 pending
+      useUploadStore.getState().startUpload(file1);
+      useUploadStore.getState().startUpload(file2);
+      useUploadStore.getState().startUpload(file3);
+      useUploadStore.getState().startUpload(file4);
+      useUploadStore.getState().startUpload(file5);
+
+      // Complete 2nd upload first (out of order)
+      const xhr2 = MockXHR.instances[1];
+      xhr2.simulateSuccess('book-2');
+
+      await vi.waitFor(() => {
+        const state = useUploadStore.getState();
+        return state.uploadingBooks.some(b => b.fileName === 'test4.pdf');
+      }, { timeout: 100 });
+
+      let state = useUploadStore.getState();
+
+      // test4 should be active, one still pending
+      expect(state.uploadingBooks.some(b => b.fileName === 'test4.pdf')).toBe(true);
+      expect(state.pendingUploads).toHaveLength(1);
+      expect(state.pendingUploads[0].name).toBe('test5.pdf');
+
+      // Complete 3rd upload
+      const xhr3 = MockXHR.instances[2];
+      xhr3.simulateSuccess('book-3');
+
+      await vi.waitFor(() => {
+        const state = useUploadStore.getState();
+        return state.uploadingBooks.some(b => b.fileName === 'test5.pdf');
+      }, { timeout: 100 });
+
+      state = useUploadStore.getState();
+
+      // test5 should now be active, pending should be empty
+      expect(state.uploadingBooks.some(b => b.fileName === 'test5.pdf')).toBe(true);
+      expect(state.pendingUploads).toHaveLength(0);
+    });
+
+    it('should not start queued uploads when slots are still full', () => {
+      const file1 = new File(['test 1'], 'test1.pdf', { type: 'application/pdf' });
+      const file2 = new File(['test 2'], 'test2.pdf', { type: 'application/pdf' });
+      const file3 = new File(['test 3'], 'test3.pdf', { type: 'application/pdf' });
+      const file4 = new File(['test 4'], 'test4.pdf', { type: 'application/pdf' });
+
+      // Start 4 uploads
+      useUploadStore.getState().startUpload(file1);
+      useUploadStore.getState().startUpload(file2);
+      useUploadStore.getState().startUpload(file3);
+      useUploadStore.getState().startUpload(file4);
+
+      // Manually call processQueue (shouldn't do anything)
+      useUploadStore.getState().processQueue();
+
+      const state = useUploadStore.getState();
+
+      // Should remain unchanged - 3 active, 1 pending
+      expect(state.uploadingBooks).toHaveLength(3);
+      expect(state.pendingUploads).toHaveLength(1);
+    });
+  });
 });

@@ -1,10 +1,21 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { BookOpen, Library as LibraryIcon, Upload } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { BookOpen, Library as LibraryIcon, Upload, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
@@ -38,7 +49,7 @@ export function Library() {
   const cancelUpload = useUploadStore((state) => state.cancelUpload)
   const retryUpload = useUploadStore((state) => state.retryUpload)
 
-  const { books, isLoading, refetch } = useBooks()
+  const { books, isLoading, refetch, deleteBook } = useBooks()
 
   // Auto-refresh when uploads complete
   useEffect(() => {
@@ -129,7 +140,7 @@ export function Library() {
 
             {/* Books from database */}
             {books.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard key={book.id} book={book} onDelete={deleteBook} />
             ))}
           </div>
         )}
@@ -138,62 +149,125 @@ export function Library() {
   )
 }
 
-function BookCard({ book }: { book: BookFromAPI }) {
+function BookCard({
+  book,
+  onDelete
+}: {
+  book: BookFromAPI
+  onDelete: (bookId: string) => Promise<void>
+}) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const config = statusConfig[book.status]
   const coverColor = getBookColor(book.id)
   const progress = book.status === 'READY' ? 0 : book.status === 'PROCESSING' ? 0 : 0
 
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await onDelete(book.id)
+      setShowDeleteDialog(false)
+      // Show simple success message (could add toast later)
+      console.log('Book deleted successfully:', book.title)
+    } catch (error) {
+      alert('Failed to delete book. Please try again later.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
-    <Link href={`/book/${book.id}`} className="h-full">
-      <Card className="group cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
-        <CardContent className="flex-1 flex flex-col">
-          {/* Book Cover Placeholder */}
-          <div
-            className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover:scale-[1.02] shrink-0`}
-          >
-            <BookOpen className="h-8 w-8 text-neutral-600/40" />
-          </div>
-
-          {/* Book Info */}
-          <div className="space-y-3 flex-1 flex flex-col">
-            <div className="shrink-0">
-              <h3 className="font-semibold leading-tight text-neutral-900 line-clamp-2">
-                {book.title}
-              </h3>
-              <p className="mt-1 text-sm text-neutral-600">
-                {book.author || 'Unknown Author'}
-              </p>
-            </div>
-
-            {/* Progress */}
-            <div className="space-y-2 shrink-0">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-600">Reading progress</span>
-                <span className="font-medium text-neutral-900">{progress}%</span>
+    <>
+      <div className="h-full relative group/card">
+        <Link href={`/book/${book.id}`} className="h-full block">
+          <Card className="cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
+            <CardContent className="flex-1 flex flex-col">
+              {/* Book Cover Placeholder */}
+              <div
+                className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover/card:scale-[1.02] shrink-0`}
+              >
+                <BookOpen className="h-8 w-8 text-neutral-600/40" />
               </div>
-              <Progress value={progress} className="h-1.5" />
-            </div>
 
-            {/* Spacer */}
-            <div className="flex-1"></div>
+              {/* Book Info */}
+              <div className="space-y-3 flex-1 flex flex-col">
+                <div className="shrink-0">
+                  <h3 className="font-semibold leading-tight text-neutral-900 line-clamp-2">
+                    {book.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-neutral-600">
+                    {book.author || 'Unknown Author'}
+                  </p>
+                </div>
 
-            {/* Status */}
-            <div className="shrink-0">
-              <div className="flex items-center justify-between pb-2">
-                <Badge
-                  variant="secondary"
-                  className={`${config.color} border-0 text-white`}
-                >
-                  {config.label}
-                </Badge>
+                {/* Progress */}
+                <div className="space-y-2 shrink-0">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-600">Reading progress</span>
+                    <span className="font-medium text-neutral-900">{progress}%</span>
+                  </div>
+                  <Progress value={progress} className="h-1.5" />
+                </div>
+
+                {/* Spacer */}
+                <div className="flex-1"></div>
+
+                {/* Status */}
+                <div className="shrink-0">
+                  <div className="flex items-center justify-between pb-2">
+                    <Badge
+                      variant="secondary"
+                      className={`${config.color} border-0 text-white`}
+                    >
+                      {config.label}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-neutral-500">
+                    Added {new Date(book.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-neutral-500">
-                Added {new Date(book.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Delete Button - Shows on hover */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 transition-opacity bg-white/90 hover:bg-red-50 hover:text-red-600"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setShowDeleteDialog(true)
+          }}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this book?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{book.title}&quot;? This action cannot be undone.
+              The PDF file and all associated data will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

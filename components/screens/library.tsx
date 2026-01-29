@@ -15,13 +15,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { BookOpen, Library as LibraryIcon, Upload, Trash2 } from 'lucide-react'
+import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
 import { BookUploadItem } from '@/components/upload/book-upload-item'
 import { useUploadStore } from '@/lib/stores/upload-store'
 import { useBooks, BookFromAPI } from '@/lib/hooks/use-books'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 const statusConfig = {
   PROCESSING: { label: 'Processing', color: 'bg-amber-500', uiStatus: 'reading' },
@@ -158,6 +163,7 @@ function BookCard({
 }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const config = statusConfig[book.status]
   const coverColor = getBookColor(book.id)
   const progress = book.status === 'READY' ? 0 : book.status === 'PROCESSING' ? 0 : 0
@@ -212,7 +218,7 @@ function BookCard({
                 {/* Spacer */}
                 <div className="flex-1"></div>
 
-                {/* Status */}
+                {/* Status and Action Buttons */}
                 <div className="shrink-0">
                   <div className="flex items-center justify-between pb-2">
                     <Badge
@@ -221,6 +227,88 @@ function BookCard({
                     >
                       {config.label}
                     </Badge>
+
+                    {/* Action Buttons - Show on hover */}
+                    <div className="flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 hover:bg-neutral-100"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                            }}
+                          >
+                            <Settings className="h-4 w-4 text-neutral-600" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-48 p-2"
+                          align="end"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                        >
+                          <div className="space-y-1">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-sm h-9"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                // TODO: Implement edit functionality
+                                console.log('Edit book:', book.title)
+                                setSettingsOpen(false)
+                              }}
+                            >
+                              Edit Details
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-sm h-9"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                // TODO: Implement export functionality
+                                console.log('Export book:', book.title)
+                                setSettingsOpen(false)
+                              }}
+                            >
+                              Export
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-sm h-9"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                // TODO: Implement refresh functionality
+                                console.log('Refresh book:', book.title)
+                                setSettingsOpen(false)
+                              }}
+                            >
+                              Refresh Data
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setShowDeleteDialog(true)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <p className="text-xs text-neutral-500">
                     Added {new Date(book.createdAt).toLocaleDateString()}
@@ -230,20 +318,6 @@ function BookCard({
             </CardContent>
           </Card>
         </Link>
-
-        {/* Delete Button - Shows on hover */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-3 right-3 opacity-0 group-hover/card:opacity-100 transition-opacity bg-white/90 hover:bg-red-50 hover:text-red-600"
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            setShowDeleteDialog(true)
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Delete Confirmation Dialog */}

@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings } from 'lucide-react'
+import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings, Pencil, Download, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
@@ -28,6 +28,12 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { toast } from 'sonner'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const statusConfig = {
   PROCESSING: { label: 'Processing', color: 'bg-amber-500', uiStatus: 'reading' },
@@ -241,99 +247,119 @@ function BookCard({
 
                 {/* Status and Action Buttons */}
                 <div className="shrink-0">
-                  <div className="flex items-center justify-between pb-2">
-                    <Badge
-                      variant="secondary"
-                      className={`${config.color} border-0 text-white`}
-                    >
-                      {config.label}
-                    </Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className={`${config.color} border-0 text-white`}
+                      >
+                        {config.label}
+                      </Badge>
+                      <span className="text-xs text-neutral-500">
+                        Added {new Date(book.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
 
                     {/* Action Buttons - Always visible */}
-                    <div className="flex gap-1">
-                      <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 hover:bg-neutral-100"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                            }}
-                          >
-                            <Settings className="h-4 w-4 text-neutral-600" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-48 p-2"
-                          align="end"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                          }}
-                        >
-                          <div className="space-y-1">
-                            <Button
-                              variant="ghost"
-                              className="w-full justify-start text-sm h-9"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                // TODO: Implement edit functionality
-                                console.log('Edit book:', book.title)
-                                setSettingsOpen(false)
-                              }}
-                            >
-                              Edit Details
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              className="w-full justify-start text-sm h-9"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                // TODO: Implement export functionality
-                                console.log('Export book:', book.title)
-                                setSettingsOpen(false)
-                              }}
-                            >
-                              Export
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              className="w-full justify-start text-sm h-9"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                // TODO: Implement refresh functionality
-                                console.log('Refresh book:', book.title)
-                                setSettingsOpen(false)
-                              }}
-                            >
-                              Refresh Data
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                    <TooltipProvider>
+                      <div className="flex gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div>
+                              <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 hover:bg-neutral-100 transition-colors"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      setSettingsOpen(!settingsOpen)
+                                    }}
+                                  >
+                                    <Settings className="h-4 w-4 text-neutral-600" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-48 p-2"
+                                  align="end"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                  }}
+                                >
+                                  <div className="space-y-1">
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start text-sm h-9"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        // TODO: Implement edit functionality
+                                        console.log('Edit book:', book.title)
+                                        setSettingsOpen(false)
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit Details
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start text-sm h-9"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        // TODO: Implement export functionality
+                                        console.log('Export book:', book.title)
+                                        setSettingsOpen(false)
+                                      }}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Export
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start text-sm h-9"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        // TODO: Implement refresh functionality
+                                        console.log('Refresh book:', book.title)
+                                        setSettingsOpen(false)
+                                      }}
+                                    >
+                                      <RefreshCw className="h-4 w-4 mr-2" />
+                                      Refresh Data
+                                    </Button>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Book settings</TooltipContent>
+                        </Tooltip>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setShowDeleteDialog(true)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setShowDeleteDialog(true)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete book</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
                   </div>
-                  <p className="text-xs text-neutral-500">
-                    Added {new Date(book.createdAt).toLocaleDateString()}
-                  </p>
                 </div>
               </div>
             </CardContent>

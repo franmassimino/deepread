@@ -44,7 +44,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast backdrop-blur-sm shadow-lg border",
+          toast: "backdrop-blur-sm shadow-lg border !bg-[--normal-bg] !text-[--normal-text] !border-[--normal-border]",
           success: "!bg-[--success-bg] !text-[--success-text] !border-[--success-border]",
           error: "!bg-[--error-bg] !text-[--error-text] !border-[--error-border]",
           title: "font-semibold text-sm",

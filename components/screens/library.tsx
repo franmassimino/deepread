@@ -75,7 +75,14 @@ export function Library() {
     }
   }, [uploadingBooks, refetch])
 
-  const activeUploads = uploadingBooks.filter(book => book.status !== 'ready')
+  // Keep completed uploads visible until they appear in the books list
+  const activeUploads = uploadingBooks.filter(book => {
+    // If status is ready, only show if the book is not yet in the books list
+    if (book.status === 'ready') {
+      return !books.some(b => b.title === book.fileName.replace('.pdf', ''))
+    }
+    return true
+  })
   const totalBooks = books.length
   const processingBooks = books.filter(b => b.status === 'PROCESSING').length
 
@@ -105,7 +112,7 @@ export function Library() {
         </div>
 
         {/* Loading State - Skeleton Cards */}
-        {isLoading && activeUploads.length === 0 && (
+        {isLoading && books.length === 0 && activeUploads.length === 0 && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <BookCardSkeleton key={i} />
@@ -137,7 +144,7 @@ export function Library() {
         )}
 
         {/* Books Grid */}
-        {(!isLoading || activeUploads.length > 0) && (books.length > 0 || activeUploads.length > 0) && (
+        {(books.length > 0 || activeUploads.length > 0) && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {/* Uploading books */}
             {activeUploads.map((book) => (

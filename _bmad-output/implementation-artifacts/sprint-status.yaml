@@ -54,7 +54,7 @@ development_status:
   2-3-multi-file-upload-support: review
   2-4-upload-error-handling: backlog
   2-5-library-view-with-uploaded-books: review
-  2-6-delete-book-from-library: backlog
+  2-6-delete-book-from-library: review
   epic-2-retrospective: optional
 
   epic-3: backlog

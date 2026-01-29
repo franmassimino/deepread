@@ -15,6 +15,7 @@ interface UseBooksReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  deleteBook: (bookId: string) => Promise<void>;
 }
 
 export function useBooks(): UseBooksReturn {
@@ -42,5 +43,31 @@ export function useBooks(): UseBooksReturn {
     fetchBooks();
   }, [fetchBooks]);
 
-  return { books, isLoading, error, refetch: fetchBooks };
+  const deleteBook = useCallback(async (bookId: string) => {
+    // Optimistic update - remove book immediately from UI
+    const bookToDelete = books.find(b => b.id === bookId);
+    setBooks(prevBooks => prevBooks.filter(b => b.id !== bookId));
+
+    try {
+      const response = await fetch(`/api/books/${bookId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete book');
+      }
+
+      // Success - optimistic update already applied
+    } catch (err) {
+      // Revert optimistic update on error
+      if (bookToDelete) {
+        setBooks(prevBooks => [...prevBooks, bookToDelete].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ));
+      }
+      throw err; // Re-throw so caller can handle error
+    }
+  }, [books]);
+
+  return { books, isLoading, error, refetch: fetchBooks, deleteBook };
 }

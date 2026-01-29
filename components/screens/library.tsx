@@ -92,13 +92,12 @@ export function Library() {
           <UploadPdfDialog />
         </div>
 
-        {/* Loading State */}
+        {/* Loading State - Skeleton Cards */}
         {isLoading && activeUploads.length === 0 && (
-          <div className="flex items-center justify-center py-24">
-            <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900" />
-              <p className="mt-4 text-neutral-600">Loading your library...</p>
-            </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <BookCardSkeleton key={i} />
+            ))}
           </div>
         )}
 
@@ -343,5 +342,51 @@ function BookCard({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+function BookCardSkeleton() {
+  return (
+    <div className="h-full">
+      <Card className="h-full flex flex-col">
+        <CardContent className="flex-1 flex flex-col">
+          {/* Book Cover Skeleton */}
+          <div className="mb-4 flex h-48 items-end rounded-lg bg-neutral-200 p-4 shrink-0 animate-pulse">
+            <div className="h-8 w-8 rounded bg-neutral-300" />
+          </div>
+
+          {/* Book Info Skeleton */}
+          <div className="space-y-3 flex-1 flex flex-col">
+            <div className="shrink-0">
+              {/* Title skeleton */}
+              <div className="h-5 bg-neutral-200 rounded animate-pulse w-3/4 mb-2" />
+              <div className="h-5 bg-neutral-200 rounded animate-pulse w-1/2" />
+              {/* Author skeleton */}
+              <div className="mt-1 h-4 bg-neutral-200 rounded animate-pulse w-1/3" />
+            </div>
+
+            {/* Progress Skeleton */}
+            <div className="space-y-2 shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="h-4 bg-neutral-200 rounded animate-pulse w-32" />
+                <div className="h-4 bg-neutral-200 rounded animate-pulse w-8" />
+              </div>
+              <div className="h-1.5 bg-neutral-200 rounded-full animate-pulse" />
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1"></div>
+
+            {/* Status Skeleton */}
+            <div className="shrink-0">
+              <div className="flex items-center justify-between pb-2">
+                <div className="h-6 bg-neutral-200 rounded-full animate-pulse w-20" />
+              </div>
+              <div className="h-3 bg-neutral-200 rounded animate-pulse w-24" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

@@ -123,7 +123,7 @@ export function BookUploadItem({
 
   return (
     <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-green-200' : status === 'processing' ? 'border-blue-200' : ''}`}>
-      <CardContent className="flex-1 flex flex-col p-6">
+      <CardContent className="flex-1 flex flex-col">
         {/* Book Cover Placeholder with Status-based Animation */}
         <div className={`mb-4 flex h-48 items-center justify-center rounded-lg ${getBackgroundStyle()} p-4 relative shrink-0`}>
           {/* Animated gradient background for active processing */}

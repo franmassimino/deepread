@@ -208,7 +208,7 @@ function BookCard({
       <div className="h-full relative group/card">
         <Link href={`/book/${book.id}`} className="h-full block">
           <Card className="cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
-            <CardContent className="flex-1 flex flex-col p-6">
+            <CardContent className="flex-1 flex flex-col">
               {/* Book Cover Placeholder */}
               <div
                 className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover/card:scale-[1.02] shrink-0`}
@@ -371,7 +371,7 @@ function BookCardSkeleton() {
   return (
     <div className="h-full">
       <Card className="h-full flex flex-col">
-        <CardContent className="flex-1 flex flex-col p-6">
+        <CardContent className="flex-1 flex flex-col">
           {/* Book Cover Skeleton */}
           <div className="mb-4 flex h-48 items-end rounded-lg bg-neutral-200 p-4 shrink-0 animate-pulse">
             <div className="h-8 w-8 rounded bg-neutral-300" />

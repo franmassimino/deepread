@@ -27,6 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { toast } from 'sonner'
 
 const statusConfig = {
   PROCESSING: { label: 'Processing', color: 'bg-amber-500', uiStatus: 'reading' },
@@ -55,6 +56,14 @@ export function Library() {
   const retryUpload = useUploadStore((state) => state.retryUpload)
 
   const { books, isLoading, refetch, deleteBook } = useBooks()
+  const [hasHadContent, setHasHadContent] = useState(false)
+
+  // Track if we've ever had books or uploads
+  useEffect(() => {
+    if (books.length > 0 || uploadingBooks.length > 0) {
+      setHasHadContent(true)
+    }
+  }, [books.length, uploadingBooks.length])
 
   // Auto-refresh when uploads complete
   useEffect(() => {
@@ -69,6 +78,9 @@ export function Library() {
   const activeUploads = uploadingBooks.filter(book => book.status !== 'ready')
   const totalBooks = books.length
   const processingBooks = books.filter(b => b.status === 'PROCESSING').length
+
+  // Show empty state only if never had content and not loading
+  const showEmptyState = !isLoading && books.length === 0 && activeUploads.length === 0 && !hasHadContent
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -102,7 +114,7 @@ export function Library() {
         )}
 
         {/* Empty State */}
-        {!isLoading && books.length === 0 && activeUploads.length === 0 && (
+        {showEmptyState && (
           <div className="flex flex-col items-center justify-center py-24">
             <div className="rounded-full bg-neutral-100 p-6">
               <LibraryIcon className="h-12 w-12 text-neutral-400" />
@@ -172,10 +184,13 @@ function BookCard({
     try {
       await onDelete(book.id)
       setShowDeleteDialog(false)
-      // Show simple success message (could add toast later)
-      console.log('Book deleted successfully:', book.title)
+      toast.success('Book deleted', {
+        description: `"${book.title}" has been removed from your library.`
+      })
     } catch (error) {
-      alert('Failed to delete book. Please try again later.')
+      toast.error('Failed to delete book', {
+        description: 'Please try again later.'
+      })
     } finally {
       setIsDeleting(false)
     }
@@ -186,7 +201,7 @@ function BookCard({
       <div className="h-full relative group/card">
         <Link href={`/book/${book.id}`} className="h-full block">
           <Card className="cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
-            <CardContent className="flex-1 flex flex-col">
+            <CardContent className="flex-1 flex flex-col p-6">
               {/* Book Cover Placeholder */}
               <div
                 className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover/card:scale-[1.02] shrink-0`}
@@ -227,8 +242,8 @@ function BookCard({
                       {config.label}
                     </Badge>
 
-                    {/* Action Buttons - Show on hover */}
-                    <div className="flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                    {/* Action Buttons - Always visible */}
+                    <div className="flex gap-1">
                       <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
                         <PopoverTrigger asChild>
                           <Button
@@ -349,7 +364,7 @@ function BookCardSkeleton() {
   return (
     <div className="h-full">
       <Card className="h-full flex flex-col">
-        <CardContent className="flex-1 flex flex-col">
+        <CardContent className="flex-1 flex flex-col p-6">
           {/* Book Cover Skeleton */}
           <div className="mb-4 flex h-48 items-end rounded-lg bg-neutral-200 p-4 shrink-0 animate-pulse">
             <div className="h-8 w-8 rounded bg-neutral-300" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -37,7 +38,7 @@ import {
 
 const statusConfig = {
   PROCESSING: { label: 'Processing', color: 'bg-amber-500', uiStatus: 'reading' },
-  READY: { label: 'Ready', color: 'bg-green-500', uiStatus: 'completed' },
+  READY: { label: 'New', color: 'bg-neutral-400', uiStatus: 'completed' },
   ERROR: { label: 'Error', color: 'bg-red-500', uiStatus: 'reading' },
 }
 
@@ -62,14 +63,6 @@ export function Library() {
   const retryUpload = useUploadStore((state) => state.retryUpload)
 
   const { books, isLoading, refetch, deleteBook } = useBooks()
-  const [hasHadContent, setHasHadContent] = useState(false)
-
-  // Track if we've ever had books or uploads
-  useEffect(() => {
-    if (books.length > 0 || uploadingBooks.length > 0) {
-      setHasHadContent(true)
-    }
-  }, [books.length, uploadingBooks.length])
 
   // Auto-refresh when uploads complete
   useEffect(() => {
@@ -92,8 +85,8 @@ export function Library() {
   const totalBooks = books.length
   const processingBooks = books.filter(b => b.status === 'PROCESSING').length
 
-  // Show empty state only if never had content and not loading
-  const showEmptyState = !isLoading && books.length === 0 && activeUploads.length === 0 && !hasHadContent
+  // Show empty state when no books and no active uploads (allows re-appearing after deletion)
+  const showEmptyState = !isLoading && books.length === 0 && activeUploads.length === 0
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -119,60 +112,110 @@ export function Library() {
 
         {/* Loading State - Skeleton Cards */}
         {isLoading && books.length === 0 && activeUploads.length === 0 && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div 
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <BookCardSkeleton key={i} />
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  duration: 0.35, 
+                  delay: i * 0.04,
+                  ease: "easeOut"
+                }}
+              >
+                <BookCardSkeleton />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
-        {/* Empty State */}
-        {showEmptyState && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="rounded-full bg-neutral-100 p-6">
-              <LibraryIcon className="h-12 w-12 text-neutral-400" />
-            </div>
-            <h3 className="mt-6 text-lg font-medium text-neutral-900">No books yet</h3>
-            <p className="mt-2 max-w-sm text-center text-neutral-600">
-              Upload your first PDF to start building your library.
-            </p>
-            <div className="mt-6">
-              <UploadPdfDialog
-                trigger={
-                  <button className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-800">
-                    <Upload className="h-4 w-4" />
-                    Upload PDF
-                  </button>
-                }
-              />
-            </div>
-          </div>
-        )}
+        {/* Content Area with AnimatePresence for switching between Empty State and Books Grid */}
+        <AnimatePresence mode="wait">
+          {/* Empty State */}
+          {showEmptyState && (
+            <motion.div 
+              key="empty-state"
+              className="flex flex-col items-center border-2 transition-all hover:border-gray-400 border-dashed rounded-md justify-center py-18"
+              initial={{ opacity: 0, scale: 0.98, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: -8 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <div className="rounded-full bg-neutral-100 p-6">
+                <LibraryIcon className="h-12 w-12 text-neutral-400" />
+              </div>
+              <h3 className="mt-6 text-lg font-medium text-neutral-900">No books yet</h3>
+              <p className="mt-2 max-w-sm text-center text-neutral-600">
+                Upload your first PDF to start building your library.
+              </p>
+              <div className="mt-6">
+                <UploadPdfDialog
+                  trigger={
+                    <Button size="sm" className="py-6 px-8">
+                      <Upload className="h-4 w-4" />
+                      Upload PDF
+                    </Button>
+                  }
+                />
+              </div>
+            </motion.div>
+          )}
 
-        {/* Books Grid */}
-        {(books.length > 0 || activeUploads.length > 0) && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Uploading books */}
-            {activeUploads.map((book) => (
-              <BookUploadItem
-                key={book.id}
-                id={book.id}
-                fileName={book.fileName}
-                progress={book.progress}
-                currentStep={book.currentStep}
-                status={book.status}
-                error={book.error}
-                onCancel={cancelUpload}
-                onRetry={retryUpload}
-              />
-            ))}
+          {/* Books Grid */}
+          {(books.length > 0 || activeUploads.length > 0) && (
+            <motion.div 
+              key="books-grid"
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <AnimatePresence mode="popLayout">
+                {/* Uploading books */}
+                {activeUploads.map((book) => (
+                  <motion.div
+                    key={book.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <BookUploadItem
+                      id={book.id}
+                      fileName={book.fileName}
+                      progress={book.progress}
+                      currentStep={book.currentStep}
+                      status={book.status}
+                      error={book.error}
+                      onCancel={cancelUpload}
+                      onRetry={retryUpload}
+                    />
+                  </motion.div>
+                ))}
 
-            {/* Books from database */}
-            {books.map((book) => (
-              <BookCard key={book.id} book={book} onDelete={deleteBook} />
-            ))}
-          </div>
-        )}
+                {/* Books from database */}
+                {books.map((book) => (
+                  <motion.div
+                    key={book.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <BookCard book={book} onDelete={deleteBook} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   )

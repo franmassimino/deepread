@@ -69,6 +69,13 @@ export interface StorageService {
    * @param bookId - Book identifier
    */
   deleteBookFiles(bookId: string): Promise<void>;
+
+  /**
+   * Get the full file path from a relative path
+   * @param relativePath - Relative path to the file
+   * @returns Full absolute path
+   */
+  getFilePath(relativePath: string): string;
 }
 
 /**
@@ -241,6 +248,10 @@ export class LocalStorageService implements StorageService {
         error as Error
       );
     }
+  }
+
+  getFilePath(relativePath: string): string {
+    return this.getFullPath(relativePath);
   }
 }
 

@@ -1,4 +1,6 @@
-import pdfParse from 'pdf-parse';
+// Import from lib directly to bypass debug code that references missing test files
+// See: https://github.com/albertyeh/pdf-parse/issues/2
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import fs from 'fs/promises';
 
 /**

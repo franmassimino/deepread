@@ -47,7 +47,7 @@ export function BookUploadItem({
       case 'processing':
         return { label: 'Processing...', color: 'text-blue-600' };
       case 'ready':
-        return { label: 'Ready!', color: 'text-green-600' };
+        return { label: 'New', color: 'text-neutral-500' };
       case 'error':
         return { label: error || 'Upload failed', color: 'text-red-600' };
       case 'cancelled':
@@ -62,7 +62,7 @@ export function BookUploadItem({
   const getBackgroundStyle = () => {
     switch (status) {
       case 'ready':
-        return 'bg-green-50';
+        return 'bg-neutral-100';
       case 'error':
         return 'bg-red-50';
       case 'cancelled':
@@ -77,7 +77,7 @@ export function BookUploadItem({
   const getIcon = () => {
     switch (status) {
       case 'ready':
-        return <CheckCircle className="h-8 w-8 text-green-500" />;
+        return <CheckCircle className="h-8 w-8 text-neutral-400" />;
       case 'error':
         return <AlertCircle className="h-8 w-8 text-red-500" />;
       case 'cancelled':
@@ -96,7 +96,7 @@ export function BookUploadItem({
   const getProgressBarColor = () => {
     switch (status) {
       case 'ready':
-        return '[&>div]:bg-green-500';
+        return '[&>div]:bg-neutral-400';
       case 'error':
         return '[&>div]:bg-red-500';
       case 'cancelled':
@@ -122,7 +122,7 @@ export function BookUploadItem({
   };
 
   return (
-    <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-green-200' : status === 'processing' ? 'border-blue-200' : ''}`}>
+    <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-neutral-200' : status === 'processing' ? 'border-blue-200' : ''}`}>
       <CardContent className="flex-1 flex flex-col">
         {/* Book Cover Placeholder with Status-based Animation */}
         <div className={`mb-4 flex h-48 items-center justify-center rounded-lg ${getBackgroundStyle()} p-4 relative shrink-0`}>
@@ -222,7 +222,7 @@ export function BookUploadItem({
 
           {/* Ready indicator */}
           {status === 'ready' && (
-            <div className="flex items-center justify-center gap-2 pt-2 shrink-0 text-green-600 text-sm">
+            <div className="flex items-center justify-center gap-2 pt-2 shrink-0 text-neutral-500 text-sm">
               <CheckCircle className="h-4 w-4" />
               <span>Added to library</span>
             </div>

@@ -194,7 +194,7 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
           const response = JSON.parse(xhr.responseText);
           const bookId = response.bookId;
 
-          // Mark as processing and start simulated AI processing
+          // Mark as processing and start real PDF extraction
           get().updateUpload(id, {
             status: 'processing',
             progress: UPLOAD_PROGRESS_MAX, // Upload complete = 30%
@@ -202,9 +202,8 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
             bookId
           });
 
-          // Simulate AI processing steps
-          // TODO: Replace with real SSE/polling in Epic 3
-          simulateProcessing(id, bookId, file.name, get);
+          // Trigger PDF processing and start polling
+          triggerProcessing(id, bookId, file.name, get);
 
           // Note: processQueue is called when processing completes, not here
 
@@ -265,10 +264,10 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
 }));
 
 /**
- * Simulates AI processing with visual progress steps.
- * TODO: Replace with real SSE/polling when Epic 3 is implemented.
+ * Triggers PDF processing and polls for status updates.
+ * Replaces the simulated processing with real extraction.
  */
-async function simulateProcessing(
+async function triggerProcessing(
   uploadId: string,
   bookId: string,
   fileName: string,
@@ -276,56 +275,149 @@ async function simulateProcessing(
 ) {
   const bookTitle = fileName.replace('.pdf', '');
 
-  // Run through each processing step
-  for (let i = 0; i < processingSteps.length; i++) {
-    const step = processingSteps[i];
-
-    // Check if upload was cancelled
-    const currentBook = get().uploadingBooks.find(b => b.id === uploadId);
-    if (!currentBook || currentBook.status === 'cancelled') {
-      return;
-    }
-
-    // Calculate unified progress: 30% + (step / totalSteps) * 70%
-    const stepProgress = PROCESSING_PROGRESS_START +
-      ((i + 1) / processingSteps.length) * PROCESSING_PROGRESS_RANGE;
-
-    // Update to current step and unified progress
-    get().updateUpload(uploadId, {
-      currentStep: i + 1,
-      progress: Math.round(stepProgress)
+  try {
+    // Step 1: Trigger PDF processing
+    console.log(`[Upload] Triggering processing for book: ${bookId}`);
+    const triggerResponse = await fetch(`/api/process/${bookId}`, {
+      method: 'POST',
     });
 
-    await new Promise(resolve => setTimeout(resolve, step.duration));
+    if (!triggerResponse.ok) {
+      throw new Error('Failed to trigger PDF processing');
+    }
+
+    // Step 2: Poll for status every 2 seconds
+    const pollInterval = 2000; // 2 seconds
+    const maxAttempts = 150; // 5 minutes max (150 * 2s)
+    let attempts = 0;
+
+    const pollStatus = async (): Promise<void> => {
+      // Check if upload was cancelled
+      const currentBook = get().uploadingBooks.find(b => b.id === uploadId);
+      if (!currentBook || currentBook.status === 'cancelled') {
+        return;
+      }
+
+      attempts++;
+      
+      if (attempts > maxAttempts) {
+        throw new Error('Processing timeout');
+      }
+
+      // Fetch current status with error handling
+      let statusResponse;
+      try {
+        statusResponse = await fetch(`/api/books/${bookId}/status`);
+      } catch (fetchError) {
+        console.warn(`[Upload] Network error polling status (attempt ${attempts}), retrying...`, fetchError);
+        setTimeout(pollStatus, pollInterval);
+        return;
+      }
+      
+      if (!statusResponse.ok) {
+        const errorText = await statusResponse.text().catch(() => 'Unknown error');
+        console.warn(`[Upload] Status fetch failed: ${statusResponse.status} - ${errorText}`);
+        
+        // If 404, maybe the book isn't created yet, keep polling
+        if (statusResponse.status === 404) {
+          setTimeout(pollStatus, pollInterval);
+          return;
+        }
+        
+        throw new Error(`Failed to fetch status: ${statusResponse.status}`);
+      }
+
+      let statusData;
+      try {
+        statusData = await statusResponse.json();
+      } catch (parseError) {
+        console.warn('[Upload] Failed to parse status response, retrying...', parseError);
+        setTimeout(pollStatus, pollInterval);
+        return;
+      }
+      const { status, error, metadata } = statusData;
+
+      // Calculate progress: 30% (upload) + 70% * (status progress / 100)
+      const processingProgress = statusData.progress || 0;
+      const totalProgress = PROCESSING_PROGRESS_START + 
+        (processingProgress / 100) * PROCESSING_PROGRESS_RANGE;
+
+      // Update UI based on status
+      if (status === 'READY') {
+        // Processing complete
+        get().updateUpload(uploadId, { 
+          status: 'ready', 
+          currentStep: processingSteps.length, 
+          progress: 100 
+        });
+
+        // Add book to library with real metadata
+        const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+        useBooksStore.getState().addBook({
+          id: bookId,
+          title: metadata.title || bookTitle,
+          author: metadata.author || 'Unknown Author',
+          progress: 0,
+          status: 'reading',
+          lastActivity: 'Just added',
+          coverColor: randomColor,
+        });
+
+        toast.success(`"${bookTitle}" is ready!`, {
+          description: 'Your book is now available in your library',
+          duration: 4000,
+        });
+
+        // Remove from uploading list after brief delay
+        setTimeout(() => {
+          get().removeUpload(uploadId);
+        }, 1000);
+
+        // Process next queued upload
+        get().processQueue();
+        
+      } else if (status === 'ERROR') {
+        // Processing failed
+        throw new Error(error || 'PDF processing failed');
+        
+      } else {
+        // Still processing - update progress
+        const currentStep = Math.min(
+          Math.floor((processingProgress / 100) * processingSteps.length) + 1,
+          processingSteps.length
+        );
+        
+        get().updateUpload(uploadId, {
+          currentStep,
+          progress: Math.round(totalProgress)
+        });
+
+        // Poll again after interval
+        setTimeout(pollStatus, pollInterval);
+      }
+    };
+
+    // Start polling
+    await pollStatus();
+
+  } catch (error) {
+    console.error('[Upload] Processing error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Processing failed';
+    
+    get().updateUpload(uploadId, {
+      status: 'error',
+      error: errorMessage
+    });
+
+    toast.error(`Failed to process "${fileName}"`, {
+      description: errorMessage,
+      duration: 5000,
+    });
+
+    // Process next queued upload
+    get().processQueue();
   }
-
-  // Mark as ready (100%)
-  get().updateUpload(uploadId, { status: 'ready', currentStep: processingSteps.length, progress: 100 });
-
-  // Add book to library
-  const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'];
-  const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-  useBooksStore.getState().addBook({
-    id: bookId,
-    title: bookTitle,
-    author: 'Unknown Author',
-    progress: 0,
-    status: 'reading',
-    lastActivity: 'Just added',
-    coverColor: randomColor,
-  });
-
-  toast.success(`"${bookTitle}" is ready!`, {
-    description: 'Your book is now available in your library',
-    duration: 4000,
-  });
-
-  // Remove from uploading list after brief delay
-  setTimeout(() => {
-    get().removeUpload(uploadId);
-  }, 1000);
-
-  // Process next queued upload (processing is complete)
-  get().processQueue();
 }

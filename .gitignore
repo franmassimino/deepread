@@ -60,6 +60,10 @@ Thumbs.db
 # Temporary Claude files
 tmpclaude-*
 
+# Temporary PR/template files
+.pr-body.md
+TESTS-TODO.md
+
 # Local file storage (PDFs, images)
 /storage/
 /test-storage/

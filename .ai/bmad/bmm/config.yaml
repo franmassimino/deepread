@@ -5,8 +5,8 @@
 
 project_name: deepread
 user_skill_level: intermediate
-planning_artifacts: "{project-root}/.ai/docs/bmad-output/planning-artifacts"
-implementation_artifacts: "{project-root}/.ai/docs/bmad-output/implementation-artifacts"
+planning_artifacts: "{project-root}/.ai/docs/planning"
+implementation_artifacts: "{project-root}/.ai/docs/implementation"
 project_knowledge: "{project-root}/.ai/docs"
 tea_use_mcp_enhancements: false
 tea_use_playwright_utils: false
@@ -15,7 +15,7 @@ tea_use_playwright_utils: false
 user_name: Francisco
 communication_language: English
 document_output_language: English
-output_folder: "{project-root}/.ai/docs/bmad-output"
+output_folder: "{project-root}/.ai/docs"
 
 # Git Workflow Configuration
 # ==========================

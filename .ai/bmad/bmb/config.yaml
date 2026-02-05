@@ -3,10 +3,10 @@
 # Version: 6.0.0-alpha.23
 # Date: 2026-01-13T19:43:53.047Z
 
-bmb_creations_output_folder: "{project-root}/.ai/docs/bmad-output/bmb-creations"
+bmb_creations_output_folder: "{project-root}/.ai/docs/bmb-creations"
 
 # Core Configuration Values
 user_name: Francisco
 communication_language: English
 document_output_language: English
-output_folder: "{project-root}/.ai/docs/bmad-output"
+output_folder: "{project-root}/.ai/docs"

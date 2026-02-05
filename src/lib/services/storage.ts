@@ -69,6 +69,13 @@ export interface StorageService {
    * @param bookId - Book identifier
    */
   deleteBookFiles(bookId: string): Promise<void>;
+
+  /**
+   * Get the full file path from a relative path
+   * @param relativePath - Relative path to the file
+   * @returns Full absolute path
+   */
+  getFilePath(relativePath: string): string;
 }
 
 /**
@@ -242,6 +249,10 @@ export class LocalStorageService implements StorageService {
       );
     }
   }
+
+  getFilePath(relativePath: string): string {
+    return this.getFullPath(relativePath);
+  }
 }
 
 /**
@@ -276,7 +287,11 @@ const globalForStorage = globalThis as unknown as {
 };
 
 const createStorageService = (): LocalStorageService => {
-  const basePath = process.env.STORAGE_PATH || join(process.cwd(), 'storage');
+  // Use /tmp in production (Vercel) since filesystem is read-only except /tmp
+  const defaultPath = process.env.NODE_ENV === 'production'
+    ? '/tmp/storage'
+    : join(process.cwd(), 'storage');
+  const basePath = process.env.STORAGE_PATH || defaultPath;
   const service = new LocalStorageService(basePath);
 
   if (process.env.NODE_ENV === 'development') {

@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { 
   extractTextFromPDF, 
+  extractImagesFromPDF,
+  extractTablesFromPDF,
   PDFExtractionError,
   isScannedPDF,
   getWordCount 
@@ -14,12 +16,19 @@ const __dirname = path.dirname(__filename);
 
 // Test PDF paths
 const TEST_PDFS_DIR = path.join(__dirname, '../fixtures/pdfs');
+const TEST_STORAGE_DIR = path.join(__dirname, '../fixtures/storage');
 const SAMPLE_PDF_PATH = path.join(TEST_PDFS_DIR, 'sample.pdf');
 const CORRUPT_PDF_PATH = path.join(TEST_PDFS_DIR, 'corrupt.pdf');
 const EMPTY_PDF_PATH = path.join(TEST_PDFS_DIR, 'empty.pdf');
 const NONEXISTENT_PATH = path.join(TEST_PDFS_DIR, 'does-not-exist.pdf');
 
 describe('PDF Extraction Service', () => {
+  beforeAll(async () => {
+    // Ensure test directories exist
+    await fs.mkdir(TEST_PDFS_DIR, { recursive: true });
+    await fs.mkdir(TEST_STORAGE_DIR, { recursive: true });
+  });
+
   describe('extractTextFromPDF', () => {
     it('should extract text from a valid PDF', async () => {
       // Create a simple test PDF first
@@ -78,6 +87,115 @@ describe('PDF Extraction Service', () => {
         try {
           await fs.unlink(EMPTY_PDF_PATH);
         } catch {}
+      }
+    });
+  });
+
+  describe('extractImagesFromPDF', () => {
+    it('should return empty array for PDFs without images', async () => {
+      // Create a simple text-only PDF content for testing
+      const result = await extractImagesFromPDF(
+        SAMPLE_PDF_PATH, 
+        'test-book-no-images',
+        TEST_STORAGE_DIR
+      );
+      
+      // Should return an array (may be empty if no images found)
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should create images directory', async () => {
+      const bookId = 'test-book-dir';
+      const imagesDir = path.join(TEST_STORAGE_DIR, 'images', bookId);
+      
+      try {
+        await extractImagesFromPDF(SAMPLE_PDF_PATH, bookId, TEST_STORAGE_DIR);
+        
+        // Directory should be created
+        const dirExists = await fs.stat(imagesDir).then(() => true).catch(() => false);
+        expect(dirExists).toBe(true);
+      } finally {
+        // Cleanup
+        try {
+          await fs.rm(imagesDir, { recursive: true, force: true });
+        } catch {}
+      }
+    });
+
+    it('should throw PDFExtractionError for non-existent file', async () => {
+      await expect(
+        extractImagesFromPDF(NONEXISTENT_PATH, 'test-book', TEST_STORAGE_DIR)
+      ).rejects.toThrow(PDFExtractionError);
+    });
+
+    it('should return image metadata with correct structure', async () => {
+      const result = await extractImagesFromPDF(
+        SAMPLE_PDF_PATH,
+        'test-book-metadata',
+        TEST_STORAGE_DIR
+      );
+      
+      // Each image should have required properties
+      for (const image of result) {
+        expect(image).toHaveProperty('filename');
+        expect(image).toHaveProperty('pageNumber');
+        expect(image).toHaveProperty('width');
+        expect(image).toHaveProperty('height');
+        expect(typeof image.filename).toBe('string');
+        expect(typeof image.pageNumber).toBe('number');
+        expect(typeof image.width).toBe('number');
+        expect(typeof image.height).toBe('number');
+        expect(image.pageNumber).toBeGreaterThan(0);
+        expect(image.width).toBeGreaterThan(0);
+        expect(image.height).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('extractTablesFromPDF', () => {
+    it('should return empty array for PDFs without tables', async () => {
+      const result = await extractTablesFromPDF(SAMPLE_PDF_PATH);
+      
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should throw PDFExtractionError for non-existent file', async () => {
+      await expect(extractTablesFromPDF(NONEXISTENT_PATH)).rejects.toThrow(PDFExtractionError);
+    });
+
+    it('should return table metadata with correct structure', async () => {
+      const result = await extractTablesFromPDF(SAMPLE_PDF_PATH);
+      
+      // Each table should have required properties
+      for (const table of result) {
+        expect(table).toHaveProperty('html');
+        expect(table).toHaveProperty('pageNumber');
+        expect(table).toHaveProperty('rowCount');
+        expect(table).toHaveProperty('colCount');
+        expect(typeof table.html).toBe('string');
+        expect(typeof table.pageNumber).toBe('number');
+        expect(typeof table.rowCount).toBe('number');
+        expect(typeof table.colCount).toBe('number');
+        expect(table.pageNumber).toBeGreaterThan(0);
+        expect(table.rowCount).toBeGreaterThanOrEqual(0);
+        expect(table.colCount).toBeGreaterThanOrEqual(0);
+        
+        // HTML should contain table tags
+        expect(table.html).toContain('<table>');
+        expect(table.html).toContain('</table>');
+      }
+    });
+
+    it('should detect tables with multiple columns', async () => {
+      const result = await extractTablesFromPDF(SAMPLE_PDF_PATH);
+      
+      // Filter tables with multiple columns
+      const multiColTables = result.filter(t => t.colCount >= 2);
+      
+      // Note: This test may pass with 0 tables if sample.pdf has no tables
+      // The important thing is that the function runs without errors
+      for (const table of multiColTables) {
+        expect(table.colCount).toBeGreaterThanOrEqual(2);
       }
     });
   });

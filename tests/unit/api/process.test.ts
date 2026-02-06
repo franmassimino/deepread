@@ -26,11 +26,13 @@ vi.mock('@/lib/services/storage', () => ({
 
 vi.mock('@/lib/services/pdf-extraction', () => ({
   extractTextFromPDF: vi.fn(),
+  extractImagesFromPDF: vi.fn(),
+  extractTablesFromPDF: vi.fn(),
   isScannedPDF: vi.fn(),
   getWordCount: vi.fn(),
 }));
 
-import { extractTextFromPDF, isScannedPDF, getWordCount } from '@/lib/services/pdf-extraction';
+import { extractTextFromPDF, extractImagesFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount } from '@/lib/services/pdf-extraction';
 
 describe('Process API Route', () => {
   beforeEach(() => {
@@ -57,6 +59,8 @@ describe('Process API Route', () => {
     });
     vi.mocked(isScannedPDF).mockReturnValue(false);
     vi.mocked(getWordCount).mockReturnValue(100);
+    vi.mocked(extractImagesFromPDF).mockResolvedValue([]);
+    vi.mocked(extractTablesFromPDF).mockResolvedValue([]);
     vi.mocked(storageService.getFilePath).mockReturnValue('/storage/pdfs/test-book-id/test.pdf');
 
     const request = new NextRequest('http://localhost:3000/api/process/test-book-id', {

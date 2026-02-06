@@ -38,13 +38,14 @@ const UPLOAD_PROGRESS_MAX = 30;
 const PROCESSING_PROGRESS_START = 30;
 const PROCESSING_PROGRESS_RANGE = 70; // 100 - 30 = 70%
 
-// Processing steps shown during "AI processing" simulation
+// Processing steps shown during PDF extraction
+// Progress allocation: upload = 0-30%, processing = 30-100%
+// Processing stages: text (33% -> 30-53%), images (66% -> 53-76%), tables (100% -> 76-100%)
 const processingSteps = [
-  { label: "Parsing PDF...", duration: 800 },
-  { label: "Extracting text...", duration: 1000 },
-  { label: "Generating metadata...", duration: 1200 },
-  { label: "Creating chapters...", duration: 800 },
-  { label: "Finalizing...", duration: 600 },
+  { label: "Extracting text...", duration: 1000 },      // 30-53%
+  { label: "Extracting images...", duration: 1200 },    // 53-76%
+  { label: "Extracting tables...", duration: 1000 },    // 76-100%
+  { label: "Finalizing...", duration: 500 },
 ];
 
 /**

@@ -40,6 +40,7 @@ model Book {
 
   chapters            Chapter[]
   readingProgress     ReadingProgress[]
+  images              Image[]
 
   @@index([status])
   @@index([createdAt])
@@ -60,6 +61,22 @@ model Chapter {
   book           Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@index([bookId, chapterNumber])
+}
+
+// Image model - Stores extracted images from PDFs
+model Image {
+  id          String   @id @default(uuid())
+  bookId      String
+  filename    String
+  pageNumber  Int
+  width       Int      @default(0)
+  height      Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+  @@index([pageNumber])
 }
 
 // ReadingProgress model

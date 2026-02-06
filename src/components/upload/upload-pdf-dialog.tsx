@@ -109,8 +109,8 @@ export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
               dragActive
                 ? "border-primary bg-primary/5"
                 : files.length >= MAX_FILES
-                ? "border-gray-200 bg-gray-50 cursor-not-allowed"
-                : "border-gray-300 hover:border-gray-400"
+                ? "border-border bg-muted cursor-not-allowed"
+                : "border-border hover:border-muted-foreground/60"
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -128,7 +128,7 @@ export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
             />
             <div className="space-y-1">
               <svg
-                className="mx-auto h-10 w-10 text-gray-400"
+                className="mx-auto h-10 w-10 text-muted-foreground/60"
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
@@ -141,7 +141,7 @@ export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
                   strokeLinejoin="round"
                 />
               </svg>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 {files.length > 0 ? (
                   <p className="font-medium text-primary">
                     {files.length} file{files.length > 1 ? "s" : ""} selected
@@ -158,7 +158,7 @@ export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
                   </>
                 )}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground/80">
                 PDF files only ({files.length}/{MAX_FILES})
               </p>
             </div>
@@ -170,7 +170,7 @@ export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
               {files.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between gap-2 p-2 bg-muted rounded-lg border border-border"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <svg
@@ -185,10 +185,10 @@ export function UploadPdfDialog({ trigger }: UploadPdfDialogProps) {
                       />
                     </svg>
                     <div className="flex-1 min-w-0 flex items-center gap-1">
-                      <span className="text-sm text-gray-700 truncate">
+                      <span className="text-sm text-foreground truncate">
                         {file.name}
                       </span>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground/80 whitespace-nowrap">
                         ({(file.size / 1024 / 1024).toFixed(2)} MB)
                       </span>
                     </div>

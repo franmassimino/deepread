@@ -76,6 +76,7 @@ model Image {
   book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@index([bookId])
+  @@index([bookId, pageNumber])
   @@index([pageNumber])
 }
 

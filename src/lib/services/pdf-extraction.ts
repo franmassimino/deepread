@@ -2,8 +2,15 @@
 // See: https://github.com/albertyeh/pdf-parse/issues/2
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { createCanvas } from 'canvas';
 import fs from 'fs/promises';
 import path from 'path';
+
+/**
+ * Maximum PDF file size for image extraction (100MB)
+ * Larger files may cause memory issues
+ */
+const MAX_PDF_SIZE_BYTES = 100 * 1024 * 1024;
 
 /**
  * Result of PDF text extraction
@@ -60,6 +67,40 @@ export class PDFExtractionError extends Error {
 }
 
 /**
+ * Checks if file size is within limits
+ * @param pdfPath - Path to PDF file
+ * @throws PDFExtractionError if file too large
+ */
+async function validateFileSize(pdfPath: string): Promise<void> {
+  try {
+    const stats = await fs.stat(pdfPath);
+    if (stats.size > MAX_PDF_SIZE_BYTES) {
+      throw new PDFExtractionError(
+        `PDF file too large (${(stats.size / 1024 / 1024).toFixed(1)}MB). Maximum allowed: ${MAX_PDF_SIZE_BYTES / 1024 / 1024}MB`,
+        pdfPath
+      );
+    }
+  } catch (error) {
+    if (error instanceof PDFExtractionError) throw error;
+    
+    // Check if it's a "file not found" error
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      throw new PDFExtractionError(
+        'PDF file not found',
+        pdfPath,
+        error
+      );
+    }
+    
+    throw new PDFExtractionError(
+      'Failed to check PDF file size',
+      pdfPath,
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
  * Extracts text content from a PDF file
  * @param pdfPath - Absolute path to the PDF file
  * @returns Extraction result with text, page count, and metadata
@@ -67,6 +108,9 @@ export class PDFExtractionError extends Error {
  */
 export async function extractTextFromPDF(pdfPath: string): Promise<PDFExtractionResult> {
   try {
+    // Validate file size
+    await validateFileSize(pdfPath);
+    
     // Read PDF file into buffer
     const buffer = await fs.readFile(pdfPath);
     
@@ -131,6 +175,9 @@ export async function extractImagesFromPDF(
   storageBasePath: string = './storage'
 ): Promise<ExtractedImage[]> {
   try {
+    // Validate file size first
+    await validateFileSize(pdfPath);
+    
     const images: ExtractedImage[] = [];
     
     // Read PDF file
@@ -148,81 +195,46 @@ export async function extractImagesFromPDF(
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       
-      // Get operator list to find image operators
-      const operatorList = await page.getOperatorList();
+      // Get viewport for rendering
+      const viewport = page.getViewport({ scale: 1.5 }); // Higher scale for better quality
       
-      // Track image count for naming
-      let pageImageCount = 0;
+      // Create canvas using node-canvas
+      const canvas = createCanvas(viewport.width, viewport.height);
+      const context = canvas.getContext('2d');
       
-      // Iterate through operators to find images
-      for (let i = 0; i < operatorList.fnArray.length; i++) {
-        const fn = operatorList.fnArray[i];
-        const args = operatorList.argsArray[i];
+      // Render page to canvas
+      await page.render({
+        canvasContext: context as unknown as CanvasRenderingContext2D,
+        viewport: viewport
+      }).promise;
+      
+      // Convert to PNG buffer
+      const imageBuffer = canvas.toBuffer('image/png');
+      
+      // Only save if we got actual image data
+      if (imageBuffer && imageBuffer.length > 100) { // Min 100 bytes for valid PNG
+        const filename = `page-${pageNum}.png`;
+        const imagePath = path.join(imagesDir, filename);
         
-        // Check for image operators (paintImageXObject)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (fn === (pdfjs as any).OPS?.paintImageXObject || fn === 85) {
-          try {
-            // Try to extract image from args
-            const imageName = args?.[0];
-            if (!imageName) continue;
-            
-            // Try to get image data from page resources
-            const resources = await page.getResources();
-            const xObjects = resources?.XObject;
-            
-            if (!xObjects) continue;
-            
-            // Get the image object
-            const imageObj = xObjects.get?.(imageName) || xObjects[imageName];
-            if (!imageObj) continue;
-            
-            // Extract image data
-            pageImageCount++;
-            const filename = `image-${images.length + 1}.png`;
-            const imagePath = path.join(imagesDir, filename);
-            
-            // For MVP: Render page section or save placeholder
-            // Full embedded image extraction requires more complex pdf.js usage
-            // We'll create a canvas render as fallback for now
-            const viewport = page.getViewport({ scale: 1.0 });
-            
-            // Create a canvas-like context for Node.js
-            const canvasAndContext = createCanvas(viewport.width, viewport.height);
-            
-            await page.render({
-              canvasContext: canvasAndContext.context,
-              viewport: viewport
-            }).promise;
-            
-            // Save as PNG
-            const imageBuffer = canvasAndContext.canvas.toBuffer?.() || 
-                               canvasAndContext.canvas.toPNG?.() ||
-                               Buffer.from([]);
-            
-            if (imageBuffer && imageBuffer.length > 0) {
-              await fs.writeFile(imagePath, imageBuffer);
-              
-              images.push({
-                filename,
-                pageNumber: pageNum,
-                width: Math.round(viewport.width),
-                height: Math.round(viewport.height)
-              });
-            }
-            
-            // Only extract first image per page for MVP to avoid duplicates
-            break;
-            
-          } catch (imageError) {
-            // Log but continue with other images
-            console.warn(`Failed to extract image from page ${pageNum}:`, imageError);
-          }
-        }
+        await fs.writeFile(imagePath, imageBuffer);
+        
+        images.push({
+          filename,
+          pageNumber: pageNum,
+          width: Math.round(viewport.width),
+          height: Math.round(viewport.height)
+        });
+        
+        console.log(`[PDF] Extracted image from page ${pageNum}: ${filename} (${viewport.width}x${viewport.height})`);
       }
+      
+      // Clean up page resources
+      page.cleanup();
     }
     
+    console.log(`[PDF] Total images extracted: ${images.length} from ${pdf.numPages} pages`);
     return images;
+    
   } catch (error) {
     if (error instanceof PDFExtractionError) {
       throw error;
@@ -245,13 +257,17 @@ export async function extractImagesFromPDF(
 }
 
 /**
- * Extracts tables from a PDF file by analyzing text positions
+ * Analyzes text positions to detect table structures
+ * Uses heuristics: consistent column alignment across multiple rows
  * @param pdfPath - Absolute path to the PDF file
  * @returns Array of extracted tables as HTML
  * @throws PDFExtractionError if extraction fails
  */
 export async function extractTablesFromPDF(pdfPath: string): Promise<ExtractedTable[]> {
   try {
+    // Validate file size
+    await validateFileSize(pdfPath);
+    
     const tables: ExtractedTable[] = [];
     
     // Read PDF file
@@ -270,14 +286,20 @@ export async function extractTablesFromPDF(pdfPath: string): Promise<ExtractedTa
           const textContent = await pageData.getTextContent();
           const items = textContent.items || [];
           
-          // Group text items by Y position (rows)
-          const rowGroups = new Map<number, typeof items>();
+          // Filter valid text items
+          const validItems = items.filter((item: { str?: string }) => 
+            item.str && item.str.trim().length > 0
+          );
           
-          for (const item of items) {
-            if (!item.str?.trim()) continue;
-            
-            // Round Y to group nearby text (within 2 points)
-            const yKey = Math.round(item.transform?.[5] || item.y || 0);
+          if (validItems.length === 0) return textContent;
+          
+          // Group text items by Y position (rows)
+          // Use tolerance of 3 points for vertical alignment
+          const rowGroups = new Map<number, typeof validItems>();
+          
+          for (const item of validItems) {
+            const yPos = item.transform?.[5] || item.y || 0;
+            const yKey = Math.round(yPos / 3) * 3; // Group within 3pt tolerance
             
             if (!rowGroups.has(yKey)) {
               rowGroups.set(yKey, []);
@@ -290,66 +312,21 @@ export async function extractTablesFromPDF(pdfPath: string): Promise<ExtractedTa
             .sort((a, b) => b[0] - a[0]) // Higher Y = higher on page
             .map(([_, items]) => items);
           
-          // Detect tables: look for rows with multiple items at consistent X positions
-          const potentialTables: typeof sortedRows[] = [];
-          let currentTable: typeof sortedRows = [];
-          
-          for (const row of sortedRows) {
-            // A row with 2+ items might be part of a table
-            if (row.length >= 2) {
-              currentTable.push(row);
-            } else {
-              // End of table
-              if (currentTable.length >= 2) {
-                potentialTables.push(currentTable);
-              }
-              currentTable = [];
-            }
-          }
-          
-          // Don't forget last table
-          if (currentTable.length >= 2) {
-            potentialTables.push(currentTable);
-          }
-          
-          // Convert detected tables to HTML
-          for (const tableRows of potentialTables) {
-            const htmlRows: string[] = [];
-            let maxCols = 0;
-            
-            for (const row of tableRows) {
-              // Sort items in row by X position (left to right)
-              const sortedItems = row.sort((a, b) => {
-                const xA = a.transform?.[4] || a.x || 0;
-                const xB = b.transform?.[4] || b.x || 0;
-                return xA - xB;
-              });
-              
-              const cells = sortedItems.map(item => `<td>${escapeHtml(item.str)}</td>`);
-              htmlRows.push(`<tr>${cells.join('')}</tr>`);
-              maxCols = Math.max(maxCols, cells.length);
-            }
-            
-            if (maxCols >= 2) {
-              const html = `<table>${htmlRows.join('')}</table>`;
-              tables.push({
-                html,
-                pageNumber: pageNum,
-                rowCount: tableRows.length,
-                colCount: maxCols
-              });
-            }
-          }
+          // Detect tables using improved heuristics
+          const detectedTables = detectTables(sortedRows, pageNum);
+          tables.push(...detectedTables);
           
           return textContent;
         } catch (err) {
-          console.warn(`Error processing page ${pageNum} for tables:`, err);
+          console.warn(`[PDF] Error processing page ${pageNum} for tables:`, err);
           return { items: [] };
         }
       }
     });
     
+    console.log(`[PDF] Total tables detected: ${tables.length}`);
     return tables;
+    
   } catch (error) {
     if (error instanceof PDFExtractionError) {
       throw error;
@@ -369,6 +346,101 @@ export async function extractTablesFromPDF(pdfPath: string): Promise<ExtractedTa
       error instanceof Error ? error : undefined
     );
   }
+}
+
+/**
+ * Detects tables from row groups using structural analysis
+ * Requirements for a table:
+ * - At least 2 rows
+ * - At least 2 columns
+ * - Consistent column structure across rows
+ */
+function detectTables(
+  sortedRows: { str: string; transform?: number[]; x?: number }[][],
+  pageNum: number
+): ExtractedTable[] {
+  const tables: ExtractedTable[] = [];
+  let currentTable: typeof sortedRows = [];
+  
+  for (const row of sortedRows) {
+    // Sort items in row by X position (left to right)
+    const sortedItems = row.sort((a, b) => {
+      const xA = a.transform?.[4] || a.x || 0;
+      const xB = b.transform?.[4] || b.x || 0;
+      return xA - xB;
+    });
+    
+    // A row with 2+ items might be part of a table
+    if (sortedItems.length >= 2) {
+      currentTable.push(sortedItems);
+    } else {
+      // End of potential table - validate and save if it's a real table
+      if (isValidTable(currentTable)) {
+        const tableHtml = generateTableHTML(currentTable);
+        const maxCols = Math.max(...currentTable.map(r => r.length));
+        
+        tables.push({
+          html: tableHtml,
+          pageNumber: pageNum,
+          rowCount: currentTable.length,
+          colCount: maxCols
+        });
+      }
+      currentTable = [];
+    }
+  }
+  
+  // Don't forget last table
+  if (isValidTable(currentTable)) {
+    const tableHtml = generateTableHTML(currentTable);
+    const maxCols = Math.max(...currentTable.map(r => r.length));
+    
+    tables.push({
+      html: tableHtml,
+      pageNumber: pageNum,
+      rowCount: currentTable.length,
+      colCount: maxCols
+    });
+  }
+  
+  return tables;
+}
+
+/**
+ * Validates if a group of rows constitutes a real table
+ * Requirements:
+ * - At least 2 rows
+ * - At least 2 columns in most rows
+ * - Consistent column count (±1 variance allowed)
+ */
+function isValidTable(rows: { str: string }[][]): boolean {
+  if (rows.length < 2) return false;
+  
+  const colCounts = rows.map(r => r.length);
+  const avgCols = colCounts.reduce((a, b) => a + b, 0) / colCounts.length;
+  
+  // Must have at least 2 columns on average
+  if (avgCols < 2) return false;
+  
+  // Most rows should have similar column count (within 1)
+  const variance = colCounts.map(c => Math.abs(c - avgCols));
+  const maxVariance = Math.max(...variance);
+  
+  return maxVariance <= 1.5; // Allow some variance for merged cells
+}
+
+/**
+ * Generates HTML table from row data
+ */
+function generateTableHTML(rows: { str: string }[][]): string {
+  const htmlRows = rows.map((row, rowIndex) => {
+    // First row might be header
+    const cellTag = rowIndex === 0 ? 'th' : 'td';
+    const cells = row.map(item => `<${cellTag}>${escapeHtml(item.str)}</${cellTag}>`).join('');
+    return `<tr>${cells}</tr>`;
+  });
+  
+  return `<table class="extracted-table">${htmlRows.join('')}</table>`;
 }
 
 /**
@@ -416,39 +488,12 @@ export function getWordCount(text: string): number {
  * @returns Escaped HTML string
  */
 function escapeHtml(text: string): string {
-  const div = {
+  const htmlEscapes: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;'
   };
-  return text.replace(/[&<>"']/g, (char) => div[char as keyof typeof div] || char);
-}
-
-/**
- * Creates a canvas-like object for Node.js environment
- * Note: This is a simplified implementation. For production, use 'canvas' package.
- */
-function createCanvas(width: number, height: number) {
-  // Simple mock canvas for Node.js
-  // In production, this should use the 'canvas' npm package
-  const canvas = {
-    width,
-    height,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    getContext: (type: string) => ({
-      fillRect: () => {},
-      drawImage: () => {},
-      fillText: () => {},
-      measureText: () => ({ width: 0 }),
-    }),
-    toBuffer: () => Buffer.from([]),
-    toPNG: () => Buffer.from([]),
-  };
-  
-  return {
-    canvas,
-    context: canvas.getContext('2d')
-  };
+  return text.replace(/[&<>"']/g, char => htmlEscapes[char] || char);
 }

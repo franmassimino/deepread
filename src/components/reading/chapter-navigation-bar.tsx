@@ -18,7 +18,7 @@ export function ChapterNavigationBar({
   currentChapter,
 }: ChapterNavigationBarProps) {
   return (
-    <div className="border-b bg-white">
+    <div className="border-b bg-background">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap">
@@ -30,16 +30,16 @@ export function ChapterNavigationBar({
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
-            <div className="mx-2 h-4 w-px bg-neutral-200" />
+            <div className="mx-2 h-4 w-px bg-border" />
             <ChaptersPopover
               bookId={bookId}
               chapters={chapters}
               currentChapterId={currentChapter.id}
             />
-            <h1 className="text-lg font-semibold text-neutral-900">
+            <h1 className="text-lg font-semibold text-foreground">
               {bookTitle}
             </h1>
-            <span className="ml-2 text-sm text-neutral-500">
+            <span className="ml-2 text-sm text-muted-foreground/80">
               — Chapter {currentChapter.number}
             </span>
           </div>

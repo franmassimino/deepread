@@ -18,7 +18,7 @@ export function ColorSelector({ selectedColor, onColorChange }: ColorSelectorPro
             className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${colorScheme.bg} ${
               isSelected
                 ? `${colorScheme.border} ring-2 ring-offset-1 ring-neutral-400`
-                : 'border-neutral-300 hover:border-neutral-400'
+                : 'border-neutral-300 hover:border-muted-foreground/60'
             }`}
             title={color.charAt(0).toUpperCase() + color.slice(1)}
           />

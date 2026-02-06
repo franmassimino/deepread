@@ -14,6 +14,17 @@ vi.mock('@/lib/db/db', () => ({
     chapter: {
       create: vi.fn(),
     },
+    image: {
+      createMany: vi.fn(),
+    },
+    $transaction: vi.fn(async (callback) => {
+      const tx = {
+        chapter: { create: vi.fn() },
+        image: { createMany: vi.fn() },
+        book: { update: vi.fn() },
+      };
+      return await callback(tx);
+    }),
   },
 }));
 
@@ -30,9 +41,15 @@ vi.mock('@/lib/services/pdf-extraction', () => ({
   extractTablesFromPDF: vi.fn(),
   isScannedPDF: vi.fn(),
   getWordCount: vi.fn(),
+  PDFExtractionError: class PDFExtractionError extends Error {
+    constructor(message: string, public readonly pdfPath: string, public readonly cause?: Error) {
+      super(message);
+      this.name = 'PDFExtractionError';
+    }
+  }
 }));
 
-import { extractTextFromPDF, extractImagesFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount } from '@/lib/services/pdf-extraction';
+import { extractTextFromPDF, extractImagesFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount, PDFExtractionError } from '@/lib/services/pdf-extraction';
 
 describe('Process API Route', () => {
   beforeEach(() => {

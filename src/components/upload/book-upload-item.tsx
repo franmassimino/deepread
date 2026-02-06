@@ -53,7 +53,7 @@ export function BookUploadItem({
       case 'cancelled':
         return { label: 'Cancelled', color: 'text-muted-foreground/80' };
       default:
-        return { label: 'Processing...', color: 'text-neutral-600' };
+        return { label: 'Processing...', color: 'text-muted-foreground' };
     }
   };
 
@@ -70,7 +70,7 @@ export function BookUploadItem({
       case 'processing':
         return 'bg-blue-50';
       default:
-        return 'bg-neutral-100';
+        return 'bg-muted';
     }
   };
 
@@ -122,7 +122,7 @@ export function BookUploadItem({
   };
 
   return (
-    <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-neutral-200' : status === 'processing' ? 'border-blue-200' : ''}`}>
+    <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-border' : status === 'processing' ? 'border-blue-200' : ''}`}>
       <CardContent className="flex-1 flex flex-col">
         {/* Book Cover Placeholder with Status-based Animation */}
         <div className={`mb-4 flex h-48 items-center justify-center rounded-lg ${getBackgroundStyle()} p-4 relative shrink-0`}>

@@ -40,11 +40,10 @@ const PROCESSING_PROGRESS_RANGE = 70; // 100 - 30 = 70%
 
 // Processing steps shown during PDF extraction
 // Progress allocation: upload = 0-30%, processing = 30-100%
-// Processing stages: text (33% -> 30-53%), images (66% -> 53-76%), tables (100% -> 76-100%)
+// Processing stages: text (50% -> 30-65%), tables (100% -> 65-100%)
 const processingSteps = [
-  { label: "Extracting text...", duration: 1000 },      // 30-53%
-  { label: "Extracting images...", duration: 1200 },    // 53-76%
-  { label: "Extracting tables...", duration: 1000 },    // 76-100%
+  { label: "Extracting text...", duration: 1500 },      // 30-65%
+  { label: "Extracting tables...", duration: 1500 },    // 65-100%
   { label: "Finalizing...", duration: 500 },
 ];
 

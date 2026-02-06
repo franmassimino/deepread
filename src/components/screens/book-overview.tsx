@@ -192,11 +192,11 @@ export function BookOverview({ bookId }: { bookId: string }) {
               {/* Reading Progress */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <BookOpen className="h-4 w-4" />
                     Reading Progress
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900">50%</span>
+                  <span className="text-sm font-semibold text-foreground">50%</span>
                 </div>
                 <Progress value={50} className="h-2" />
                 <p className="text-xs text-muted-foreground/80">3 of 6 chapters read</p>
@@ -205,11 +205,11 @@ export function BookOverview({ bookId }: { bookId: string }) {
               {/* Notes Completed */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <FileText className="h-4 w-4" />
                     Notes Completed
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900">33%</span>
+                  <span className="text-sm font-semibold text-foreground">33%</span>
                 </div>
                 <Progress value={33} className="h-2" />
                 <p className="text-xs text-muted-foreground/80">2 of 6 chapters with notes</p>
@@ -218,11 +218,11 @@ export function BookOverview({ bookId }: { bookId: string }) {
               {/* Understanding (Tests) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <CheckCircle2 className="h-4 w-4" />
                     Understanding
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900">17%</span>
+                  <span className="text-sm font-semibold text-foreground">17%</span>
                 </div>
                 <Progress value={17} className="h-2" />
                 <p className="text-xs text-muted-foreground/80">1 of 6 chapters tested</p>

@@ -22,10 +22,14 @@ PDF → Texto (33%) → Imágenes (66%) → Tablas (100%) → Guardado atómico 
 ## 🎯 Qué Se Implementó
 
 ### 1. Extracción de Imágenes
-- **Tecnología**: pdf.js + node-canvas
-- **Proceso**: Cada página del PDF se renderiza a una imagen PNG
+- **Tecnología**: pdf2pic + ImageMagick/GraphicsMagick
+- **Proceso**: Cada página del PDF se convierte a imagen PNG usando ImageMagick
 - **Almacenamiento**: `/storage/images/{bookId}/page-{n}.png`
-- **Calidad**: Renderizado a 1.5x escala para mejor claridad
+- **Calidad**: 150 DPI, 1200x1600px máximo
+- **Requisito del Sistema**: ImageMagick o GraphicsMagick debe estar instalado
+  - Windows: Descargar de https://imagemagick.org/script/download.php
+  - macOS: `brew install imagemagick`
+  - Linux: `sudo apt-get install imagemagick`
 
 ### 2. Extracción de Tablas
 - **Tecnología**: pdf-parse con análisis de posiciones
@@ -292,21 +296,33 @@ await prisma.$transaction(async (tx) => {
 
 ## 🐛 Troubleshooting
 
-### Problema: "canvas" no se instala correctamente
+### Problema: "ImageMagick/GraphicsMagick not found"
 
-**Síntoma:** Error al instalar dependencia
+**Síntoma:** Error al extraer imágenes
 ```
-npm ERR! node-gyp rebuild failed
+Could not execute GraphicsMagick/ImageMagick: gm "convert" ...
+this most likely means the gm/convert binaries can't be found
 ```
 
 **Solución:**
-```bash
-# En Windows, instalar herramientas de build
-npm install --global windows-build-tools
+ImageMagick es requerido para la extracción de imágenes.
 
-# O usar prebuilt binaries
-npm install canvas --canvas_binary_host_mirror=https://github.com/Automattic/node-canvas/releases/download/
+**Windows:**
+1. Descargar de: https://imagemagick.org/script/download.php#windows
+2. Instalar con la opción "Add to PATH" seleccionada
+3. Reiniciar terminal/IDE
+
+**macOS:**
+```bash
+brew install imagemagick
 ```
+
+**Linux:**
+```bash
+sudo apt-get install imagemagick
+```
+
+**Nota:** Si no puedes instalar ImageMagick, el procesamiento de texto y tablas seguirá funcionando. Las imágenes simplemente no se extraerán (graceful degradation).
 
 ### Problema: Imágenes no se extraen
 

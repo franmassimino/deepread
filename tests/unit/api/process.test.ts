@@ -14,16 +14,9 @@ vi.mock('@/lib/db/db', () => ({
     chapter: {
       create: vi.fn(),
     },
-    image: {
-      createMany: vi.fn(),
-    },
-    $transaction: vi.fn(async (callback) => {
-      const tx = {
-        chapter: { create: vi.fn() },
-        image: { createMany: vi.fn() },
-        book: { update: vi.fn() },
-      };
-      return await callback(tx);
+    $transaction: vi.fn(async (operations) => {
+      // $transaction receives an array of operations
+      return Promise.all(operations.map((op: Promise<unknown>) => op));
     }),
   },
 }));
@@ -35,21 +28,18 @@ vi.mock('@/lib/services/storage', () => ({
   },
 }));
 
-vi.mock('@/lib/services/pdf-extraction', () => ({
-  extractTextFromPDF: vi.fn(),
-  extractImagesFromPDF: vi.fn(),
-  extractTablesFromPDF: vi.fn(),
-  isScannedPDF: vi.fn(),
-  getWordCount: vi.fn(),
-  PDFExtractionError: class PDFExtractionError extends Error {
-    constructor(message: string, public readonly pdfPath: string, public readonly cause?: Error) {
-      super(message);
-      this.name = 'PDFExtractionError';
-    }
-  }
-}));
+vi.mock('@/lib/services/pdf-extraction', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/services/pdf-extraction')>('@/lib/services/pdf-extraction');
+  return {
+    ...actual,
+    extractTextFromPDF: vi.fn(),
+    extractTablesFromPDF: vi.fn(),
+    isScannedPDF: vi.fn(),
+    getWordCount: vi.fn(),
+  };
+});
 
-import { extractTextFromPDF, extractImagesFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount, PDFExtractionError } from '@/lib/services/pdf-extraction';
+import { extractTextFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount } from '@/lib/services/pdf-extraction';
 
 describe('Process API Route', () => {
   beforeEach(() => {
@@ -76,7 +66,6 @@ describe('Process API Route', () => {
     });
     vi.mocked(isScannedPDF).mockReturnValue(false);
     vi.mocked(getWordCount).mockReturnValue(100);
-    vi.mocked(extractImagesFromPDF).mockResolvedValue([]);
     vi.mocked(extractTablesFromPDF).mockResolvedValue([]);
     vi.mocked(storageService.getFilePath).mockReturnValue('/storage/pdfs/test-book-id/test.pdf');
 
@@ -95,8 +84,6 @@ describe('Process API Route', () => {
 
 describe('Status API Route', () => {
   it('should be implemented', () => {
-    // Status route tests would go here
-    // Testing the GET handler for /api/books/[id]/status
     expect(true).toBe(true);
   });
 });

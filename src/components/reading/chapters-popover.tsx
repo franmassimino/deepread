@@ -48,11 +48,11 @@ export function ChaptersPopover({
                   href={`/book/${bookId}/chapter/${chapter.number}`}
                   className={`
                     block rounded-md px-3 py-2 text-sm transition-colors
-                    hover:bg-neutral-50
+                    hover:bg-accent
                     ${
                       isCurrent
-                        ? 'bg-neutral-100 font-medium text-neutral-900'
-                        : 'text-neutral-700'
+                        ? 'bg-accent font-medium text-foreground'
+                        : 'text-muted-foreground'
                     }
                   `}
                   aria-current={isCurrent ? 'page' : undefined}

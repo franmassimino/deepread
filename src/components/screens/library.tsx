@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings, Pencil, Download, RefreshCw } from 'lucide-react'
+import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings, Pencil, Download, RefreshCw, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
@@ -260,7 +260,7 @@ function BookCard({
             <CardContent className="flex-1 flex flex-col">
               {/* Book Cover Placeholder */}
               <div
-                className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover/card:scale-[1.02] shrink-0`}
+                className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform  shrink-0`}
               >
                 <BookOpen className="h-8 w-8 text-muted-foreground/40" />
               </div>
@@ -294,7 +294,7 @@ function BookCard({
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="secondary"
-                        className={`${config.color} border-0 text-white`}
+                        className={`${config.color} border-0 text-primary-foreground`}
                       >
                         {config.label}
                       </Badge>
@@ -374,6 +374,18 @@ function BookCard({
                                     >
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                       Refresh Data
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start text-sm h-9"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        window.location.href = `/preview/${book.id}`
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      Debug / Preview
                                     </Button>
                                   </div>
                                 </PopoverContent>
@@ -459,10 +471,10 @@ function BookCardSkeleton() {
             {/* Progress Skeleton */}
             <div className="space-y-2 shrink-0">
               <div className="flex items-center justify-between">
-                <div className="h-4 bg-neutral-200 rounded animate-pulse w-32" />
-                <div className="h-4 bg-neutral-200 rounded animate-pulse w-8" />
+                <div className="h-4 bg-muted rounded animate-pulse w-32" />
+                <div className="h-4 bg-muted rounded animate-pulse w-8" />
               </div>
-              <div className="h-1.5 bg-neutral-200 rounded-full animate-pulse" />
+              <div className="h-1.5 bg-muted rounded-full animate-pulse" />
             </div>
 
             {/* Spacer */}
@@ -471,9 +483,9 @@ function BookCardSkeleton() {
             {/* Status Skeleton */}
             <div className="shrink-0">
               <div className="flex items-center justify-between pb-2">
-                <div className="h-6 bg-neutral-200 rounded-full animate-pulse w-20" />
+                <div className="h-6 bg-muted rounded-full animate-pulse w-20" />
               </div>
-              <div className="h-3 bg-neutral-200 rounded animate-pulse w-24" />
+              <div className="h-3 bg-muted rounded animate-pulse w-24" />
             </div>
           </div>
         </CardContent>

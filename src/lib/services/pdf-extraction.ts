@@ -114,14 +114,15 @@ export async function extractTablesFromPDF(pdfPath: string): Promise<ExtractedTa
     
     await pdfParse(buffer, {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      pagerender: async function(pageData: any) {
+      pagerender: function(pageData: any) {
         pageNum++;
-        try {
-          const textContent = await pageData.getTextContent();
+        // Use a promise chain to handle async operations
+        // Return empty string to satisfy type, actual processing happens in promise
+        pageData.getTextContent().then((textContent: { items: Array<{ str?: string; transform?: number[]; y?: number }> }) => {
           const items = textContent.items || [];
           
-          const validItems = items.filter((item: { str?: string }) => item.str?.trim().length > 0);
-          if (validItems.length === 0) return textContent;
+          const validItems = items.filter((item) => (item.str?.trim().length ?? 0) > 0);
+          if (validItems.length === 0) return;
           
           // Group by Y position (rows)
           const rowGroups = new Map<number, typeof validItems>();
@@ -132,20 +133,27 @@ export async function extractTablesFromPDF(pdfPath: string): Promise<ExtractedTa
             rowGroups.get(yKey)!.push(item);
           }
           
-          // Sort rows top to bottom
-          const sortedRows = Array.from(rowGroups.entries())
+          // Sort rows top to bottom and map to expected type
+          const sortedRows: { str: string; transform?: number[]; x?: number }[][] = Array.from(rowGroups.entries())
             .sort((a, b) => b[0] - a[0])
-            .map(([_, items]) => items);
+            .map(([_, rowItems]) => rowItems
+              .filter((item): item is typeof item & { str: string } => !!item.str)
+              .map((item) => ({
+                str: item.str,
+                transform: item.transform,
+                x: item.transform?.[4],
+              }))
+            );
           
           // Detect tables
           const detectedTables = detectTables(sortedRows, pageNum);
           tables.push(...detectedTables);
-          
-          return textContent;
-        } catch (err) {
+        }).catch((err: Error) => {
           console.warn(`[PDF] Error processing page ${pageNum} for tables:`, err);
-          return { items: [] };
-        }
+        });
+        
+        // Return empty string as required by pdf-parse type
+        return '';
       }
     });
     

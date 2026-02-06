@@ -65,7 +65,7 @@ export function BookOverview({ bookId }: { bookId: string }) {
   const [isChaptersOpen, setIsChaptersOpen] = useState(true)
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-background">
       <AppHeader />
 
       {/* Main Content */}
@@ -83,10 +83,10 @@ export function BookOverview({ bookId }: { bookId: string }) {
 
         {/* Book Header */}
         <div className="mb-8">
-          <h2 className="text-4xl font-semibold tracking-tight text-neutral-900">
+          <h2 className="text-4xl font-semibold tracking-tight text-foreground">
             Designing Data-Intensive Applications
           </h2>
-          <p className="mt-2 text-lg text-neutral-600">Martin Kleppmann</p>
+          <p className="mt-2 text-lg text-muted-foreground">Martin Kleppmann</p>
 
           <div className='flex gap-2 my-4'>
             <Button size="lg" className='p-4'>
@@ -129,12 +129,12 @@ export function BookOverview({ bookId }: { bookId: string }) {
                     href={`/book/${bookId}/chapter/${chapter.id}`}
                     className="group block"
                   >
-                    <div className="flex items-center justify-between rounded-lg py-4 transition-colors hover:bg-neutral-50">
+                    <div className="flex items-center justify-between rounded-lg py-4 transition-colors hover:bg-accent/50">
                       <div className="flex items-center gap-1">
-                        <span className="text-sm font-medium text-neutral-500">
+                        <span className="text-sm font-medium text-muted-foreground/80">
                           {chapter.number}.
                         </span>
-                        <span className="font-medium text-neutral-900 group-hover:text-neutral-700">
+                        <span className="font-medium text-foreground group-hover:text-muted-foreground">
                           {chapter.title}
                         </span>
                       </div>
@@ -142,39 +142,39 @@ export function BookOverview({ bookId }: { bookId: string }) {
                         {/* Read Indicator */}
                         <div className="flex items-center gap-1.5" title="Read">
                           {chapter.read ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
                           ) : (
-                            <Circle className="h-4 w-4 text-neutral-300" />
+                            <Circle className="h-4 w-4 text-muted-foreground/30" />
                           )}
-                          <BookOpen className="h-4 w-4 text-neutral-400" />
+                          <BookOpen className="h-4 w-4 text-muted-foreground/50" />
                         </div>
 
                         {/* Notes Indicator */}
                         <div className="flex items-center gap-1.5" title="Notes">
                           {chapter.notes ? (
-                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <CheckCircle2 className="h-4 w-4 text-blue-500" />
                           ) : (
-                            <Circle className="h-4 w-4 text-neutral-300" />
+                            <Circle className="h-4 w-4 text-muted-foreground/30" />
                           )}
-                          <FileText className="h-4 w-4 text-neutral-400" />
+                          <FileText className="h-4 w-4 text-muted-foreground/50" />
                         </div>
 
                         {/* Test Indicator */}
                         <div className="flex items-center gap-1.5" title="Test">
                           {chapter.test ? (
-                            <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                            <CheckCircle2 className="h-4 w-4 text-purple-500" />
                           ) : (
-                            <Circle className="h-4 w-4 text-neutral-300" />
+                            <Circle className="h-4 w-4 text-muted-foreground/30" />
                           )}
                           <Badge
                             variant="outline"
-                            className="h-4 w-4 rounded-full border-neutral-400 p-0"
+                            className="h-4 w-4 rounded-full border-muted-foreground/60 p-0"
                           />
                         </div>
                       </div>
                     </div>
                     {index < mockChapters.length - 1 && (
-                      <div className="ml-4 border-b border-neutral-100" />
+                      <div className="ml-4 border-b border-border" />
                     )}
                   </Link>
                 ))}
@@ -192,40 +192,40 @@ export function BookOverview({ bookId }: { bookId: string }) {
               {/* Reading Progress */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <BookOpen className="h-4 w-4" />
                     Reading Progress
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900">50%</span>
+                  <span className="text-sm font-semibold text-foreground">50%</span>
                 </div>
                 <Progress value={50} className="h-2" />
-                <p className="text-xs text-neutral-500">3 of 6 chapters read</p>
+                <p className="text-xs text-muted-foreground/80">3 of 6 chapters read</p>
               </div>
 
               {/* Notes Completed */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <FileText className="h-4 w-4" />
                     Notes Completed
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900">33%</span>
+                  <span className="text-sm font-semibold text-foreground">33%</span>
                 </div>
                 <Progress value={33} className="h-2" />
-                <p className="text-xs text-neutral-500">2 of 6 chapters with notes</p>
+                <p className="text-xs text-muted-foreground/80">2 of 6 chapters with notes</p>
               </div>
 
               {/* Understanding (Tests) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <CheckCircle2 className="h-4 w-4" />
                     Understanding
                   </div>
-                  <span className="text-sm font-semibold text-neutral-900">17%</span>
+                  <span className="text-sm font-semibold text-foreground">17%</span>
                 </div>
                 <Progress value={17} className="h-2" />
-                <p className="text-xs text-neutral-500">1 of 6 chapters tested</p>
+                <p className="text-xs text-muted-foreground/80">1 of 6 chapters tested</p>
               </div>
             </CardContent>
           </Card>
@@ -238,7 +238,7 @@ export function BookOverview({ bookId }: { bookId: string }) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="leading-relaxed text-neutral-700">
+              <p className="leading-relaxed text-muted-foreground">
                 The core insight is that data systems need to be designed with three key properties in
                 mind: reliability, scalability, and maintainability. What's interesting is how these
                 concepts are interconnected—you can't optimize for one without considering the

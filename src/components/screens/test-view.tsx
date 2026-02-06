@@ -11,7 +11,7 @@ import { AppHeader } from '../ui/app-header'
 
 export function TestView({ bookId, chapterId }: { bookId: string; chapterId: string }) {
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <AppHeader />
 
@@ -31,12 +31,12 @@ export function TestView({ bookId, chapterId }: { bookId: string; chapterId: str
         {/* Header */}
         <div className="mb-8">
           <div className="mb-3 flex items-center gap-3">
-            <h2 className="text-3xl font-semibold tracking-tight text-neutral-900">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground">
               Understanding Check
             </h2>
             <Badge variant="outline">Question 2 of 5</Badge>
           </div>
-          <p className="text-neutral-600">
+          <p className="text-muted-foreground">
             Chapter 3: Storage and Retrieval • Designing Data-Intensive Applications
           </p>
         </div>
@@ -44,7 +44,7 @@ export function TestView({ bookId, chapterId }: { bookId: string; chapterId: str
         {/* Question Card */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-xl font-medium leading-relaxed text-neutral-900">
+            <CardTitle className="text-xl font-medium leading-relaxed text-foreground">
               Explain the fundamental trade-off between write performance and read performance in
               the context of log-structured storage. Why does this trade-off exist, and how do
               databases attempt to balance it?
@@ -52,15 +52,15 @@ export function TestView({ bookId, chapterId }: { bookId: string; chapterId: str
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <label className="mb-3 block text-sm font-medium text-neutral-700">
+              <label className="mb-3 block text-sm font-medium text-muted-foreground">
                 Your Answer
               </label>
               <Textarea
                 placeholder="Take your time to think and write a comprehensive answer..."
-                className="min-h-[280px] resize-none text-base leading-relaxed focus-visible:ring-neutral-400"
+                className="min-h-[280px] resize-none text-base leading-relaxed focus-visible:ring-ring"
                 defaultValue=""
               />
-              <p className="mt-2 text-xs text-neutral-500">
+              <p className="mt-2 text-xs text-muted-foreground/80">
                 Focus on explaining the concepts in your own words, not memorizing definitions.
               </p>
             </div>
@@ -76,7 +76,7 @@ export function TestView({ bookId, chapterId }: { bookId: string; chapterId: str
 
         {/* Feedback Section (Example - shown after submission) */}
         <div className="space-y-6">
-          <h3 className="text-2xl font-semibold text-neutral-900">Feedback</h3>
+          <h3 className="text-2xl font-semibold text-foreground">Feedback</h3>
 
           <Card className="border-green-200 bg-green-50/50">
             <CardHeader>
@@ -138,11 +138,11 @@ export function TestView({ bookId, chapterId }: { bookId: string; chapterId: str
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-neutral-900">
+              <CardTitle className="text-base font-semibold text-foreground">
                 Suggested Review
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm leading-relaxed text-neutral-700">
+            <CardContent className="text-sm leading-relaxed text-muted-foreground">
               <p className="mb-3">
                 Re-read the section on "Hash Indexes" and "SSTables and LSM-Trees" in Chapter 3.
                 Pay special attention to:

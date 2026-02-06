@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings, Pencil, Download, RefreshCw } from 'lucide-react'
+import { BookOpen, Library as LibraryIcon, Upload, Trash2, Settings, Pencil, Download, RefreshCw, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { AppHeader } from '@/components/ui/app-header'
 import { UploadPdfDialog } from '@/components/upload/upload-pdf-dialog'
@@ -38,7 +38,7 @@ import {
 
 const statusConfig = {
   PROCESSING: { label: 'Processing', color: 'bg-amber-500', uiStatus: 'reading' },
-  READY: { label: 'New', color: 'bg-neutral-400', uiStatus: 'completed' },
+  READY: { label: 'New', color: 'bg-muted-foreground/50', uiStatus: 'completed' },
   ERROR: { label: 'Error', color: 'bg-red-500', uiStatus: 'reading' },
 }
 
@@ -89,21 +89,21 @@ export function Library() {
   const showEmptyState = !isLoading && books.length === 0 && activeUploads.length === 0
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="mx-auto max-w-7xl py-8 px-[5%]">
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight text-neutral-900">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground">
               Your Library
             </h2>
-            <p className="mt-2 text-neutral-600">
+            <p className="mt-2 text-muted-foreground">
               {totalBooks} {totalBooks === 1 ? 'book' : 'books'}
               {processingBooks > 0 && (
-                <span className="text-neutral-500"> ({processingBooks} processing)</span>
+                <span className="text-muted-foreground/80"> ({processingBooks} processing)</span>
               )}
               {activeUploads.length > 0 && (
-                <span className="text-neutral-500"> &bull; {activeUploads.length} uploading</span>
+                <span className="text-muted-foreground/80"> &bull; {activeUploads.length} uploading</span>
               )}
             </p>
           </div>
@@ -141,17 +141,17 @@ export function Library() {
           {showEmptyState && (
             <motion.div 
               key="empty-state"
-              className="flex flex-col items-center border-2 transition-all hover:border-gray-400 border-dashed rounded-md justify-center py-18"
+              className="flex flex-col items-center border-2 transition-all hover:border-muted-foreground/40 border-dashed rounded-md justify-center py-18"
               initial={{ opacity: 0, scale: 0.98, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: -8 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <div className="rounded-full bg-neutral-100 p-6">
-                <LibraryIcon className="h-12 w-12 text-neutral-400" />
+              <div className="rounded-full bg-accent p-6">
+                <LibraryIcon className="h-12 w-12 text-muted-foreground/60" />
               </div>
-              <h3 className="mt-6 text-lg font-medium text-neutral-900">No books yet</h3>
-              <p className="mt-2 max-w-sm text-center text-neutral-600">
+              <h3 className="mt-6 text-lg font-medium text-foreground">No books yet</h3>
+              <p className="mt-2 max-w-sm text-center text-muted-foreground">
                 Upload your first PDF to start building your library.
               </p>
               <div className="mt-6">
@@ -256,22 +256,22 @@ function BookCard({
     <>
       <div className="h-full relative group/card">
         <Link href={`/book/${book.id}`} className="h-full block">
-          <Card className="cursor-pointer transition-all hover:shadow-lg hover:shadow-neutral-200/50 h-full flex flex-col">
+          <Card className="cursor-pointer transition-all hover:shadow-lg hover:shadow-muted/50 h-full flex flex-col">
             <CardContent className="flex-1 flex flex-col">
               {/* Book Cover Placeholder */}
               <div
-                className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform group-hover/card:scale-[1.02] shrink-0`}
+                className={`mb-4 flex h-48 items-end rounded-lg ${coverColor} p-4 transition-transform  shrink-0`}
               >
-                <BookOpen className="h-8 w-8 text-neutral-600/40" />
+                <BookOpen className="h-8 w-8 text-muted-foreground/40" />
               </div>
 
               {/* Book Info */}
               <div className="space-y-3 flex-1 flex flex-col">
                 <div className="shrink-0">
-                  <h3 className="font-semibold leading-tight text-neutral-900 line-clamp-2">
+                  <h3 className="font-semibold leading-tight text-foreground line-clamp-2">
                     {book.title}
                   </h3>
-                  <p className="mt-1 text-sm text-neutral-600">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {book.author || 'Unknown Author'}
                   </p>
                 </div>
@@ -279,8 +279,8 @@ function BookCard({
                 {/* Progress */}
                 <div className="space-y-2 shrink-0">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-600">Reading progress</span>
-                    <span className="font-medium text-neutral-900">{progress}%</span>
+                    <span className="text-muted-foreground">Reading progress</span>
+                    <span className="font-medium text-foreground">{progress}%</span>
                   </div>
                   <Progress value={progress} className="h-1.5" />
                 </div>
@@ -294,11 +294,11 @@ function BookCard({
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="secondary"
-                        className={`${config.color} border-0 text-white`}
+                        className={`${config.color} border-0 text-primary-foreground`}
                       >
                         {config.label}
                       </Badge>
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-muted-foreground/80">
                         Added {new Date(book.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -314,14 +314,14 @@ function BookCard({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 hover:bg-neutral-100 transition-colors"
+                                    className="h-7 w-7 hover:bg-accent transition-colors"
                                     onClick={(e) => {
                                       e.preventDefault()
                                       e.stopPropagation()
                                       setSettingsOpen(!settingsOpen)
                                     }}
                                   >
-                                    <Settings className="h-4 w-4 text-neutral-600" />
+                                    <Settings className="h-4 w-4 text-muted-foreground" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent
@@ -374,6 +374,18 @@ function BookCard({
                                     >
                                       <RefreshCw className="h-4 w-4 mr-2" />
                                       Refresh Data
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      className="w-full justify-start text-sm h-9"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        window.location.href = `/preview/${book.id}`
+                                      }}
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      Debug / Preview
                                     </Button>
                                   </div>
                                 </PopoverContent>
@@ -442,27 +454,27 @@ function BookCardSkeleton() {
       <Card className="h-full flex flex-col">
         <CardContent className="flex-1 flex flex-col">
           {/* Book Cover Skeleton */}
-          <div className="mb-4 flex h-48 items-end rounded-lg bg-neutral-200 p-4 shrink-0 animate-pulse">
-            <div className="h-8 w-8 rounded bg-neutral-300" />
+          <div className="mb-4 flex h-48 items-end rounded-lg bg-muted p-4 shrink-0 animate-pulse">
+            <div className="h-8 w-8 rounded bg-muted-foreground/20" />
           </div>
 
           {/* Book Info Skeleton */}
           <div className="space-y-3 flex-1 flex flex-col">
             <div className="shrink-0">
               {/* Title skeleton */}
-              <div className="h-5 bg-neutral-200 rounded animate-pulse w-3/4 mb-2" />
-              <div className="h-5 bg-neutral-200 rounded animate-pulse w-1/2" />
+              <div className="h-5 bg-muted rounded animate-pulse w-3/4 mb-2" />
+              <div className="h-5 bg-muted rounded animate-pulse w-1/2" />
               {/* Author skeleton */}
-              <div className="mt-1 h-4 bg-neutral-200 rounded animate-pulse w-1/3" />
+              <div className="mt-1 h-4 bg-muted rounded animate-pulse w-1/3" />
             </div>
 
             {/* Progress Skeleton */}
             <div className="space-y-2 shrink-0">
               <div className="flex items-center justify-between">
-                <div className="h-4 bg-neutral-200 rounded animate-pulse w-32" />
-                <div className="h-4 bg-neutral-200 rounded animate-pulse w-8" />
+                <div className="h-4 bg-muted rounded animate-pulse w-32" />
+                <div className="h-4 bg-muted rounded animate-pulse w-8" />
               </div>
-              <div className="h-1.5 bg-neutral-200 rounded-full animate-pulse" />
+              <div className="h-1.5 bg-muted rounded-full animate-pulse" />
             </div>
 
             {/* Spacer */}
@@ -471,9 +483,9 @@ function BookCardSkeleton() {
             {/* Status Skeleton */}
             <div className="shrink-0">
               <div className="flex items-center justify-between pb-2">
-                <div className="h-6 bg-neutral-200 rounded-full animate-pulse w-20" />
+                <div className="h-6 bg-muted rounded-full animate-pulse w-20" />
               </div>
-              <div className="h-3 bg-neutral-200 rounded animate-pulse w-24" />
+              <div className="h-3 bg-muted rounded animate-pulse w-24" />
             </div>
           </div>
         </CardContent>

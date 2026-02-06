@@ -32,13 +32,13 @@ export function NoteForm({
     <div className="space-y-3">
       <Input
         placeholder="Title (optional)"
-        className="border-neutral-200 text-sm focus-visible:ring-neutral-400"
+        className="border-border text-sm focus-visible:ring-ring"
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
       />
       <Textarea
         placeholder="Add a note..."
-        className="min-h-[100px] resize-none border-neutral-200 text-sm leading-relaxed focus-visible:ring-neutral-400"
+        className="min-h-[100px] resize-none border-border text-sm leading-relaxed focus-visible:ring-ring"
         value={content}
         onChange={(e) => onContentChange(e.target.value)}
         onKeyDown={onKeyDown}

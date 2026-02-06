@@ -129,7 +129,7 @@
 
   /* Better prose styles for reading */
   .prose {
-    @apply text-neutral-700;
+    @apply text-muted-foreground;
   }
 
   .prose p {
@@ -137,27 +137,27 @@
   }
 
   .prose h3 {
-    @apply mt-8 mb-4 text-xl font-semibold text-neutral-900;
+    @apply mt-8 mb-4 text-xl font-semibold text-foreground;
   }
 
   .prose code {
-    @apply rounded bg-neutral-100 px-1.5 py-0.5 text-sm font-mono text-neutral-800;
+    @apply rounded bg-muted px-1.5 py-0.5 text-sm font-mono text-foreground;
   }
 
   .prose pre {
-    @apply my-6 overflow-x-auto rounded-lg bg-neutral-900 p-4;
+    @apply my-6 overflow-x-auto rounded-lg bg-muted-foreground/90 p-4;
   }
 
   .prose pre code {
-    @apply bg-transparent text-neutral-100 p-0;
+    @apply bg-transparent text-background p-0;
   }
 
   .prose em {
-    @apply italic text-neutral-800;
+    @apply italic text-foreground/80;
   }
 
   .prose strong {
-    @apply font-semibold text-neutral-900;
+    @apply font-semibold text-foreground;
   }
 
   /* Shimmer animation for loading states */

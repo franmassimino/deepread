@@ -17,7 +17,7 @@ export function BottomNavigation({
   nextChapter,
 }: BottomNavigationProps) {
   return (
-    <div className="border-t bg-white">
+    <div className="border-t bg-background">
       <div className="px-8 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Previous Chapter */}
@@ -25,7 +25,7 @@ export function BottomNavigation({
             {previousChapter && (
               <Link
                 href={`/book/${bookId}/chapter/${previousChapter.number}`}
-                className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors group"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
               >
                 <ArrowLeft className="h-4 w-4 text-primary transition-transform group-hover:-translate-x-0.5" />
                 <div className="text-left">
@@ -41,7 +41,7 @@ export function BottomNavigation({
             <Badge className="font-normal">
               Chapter {currentChapter.number}
             </Badge>
-            <p className="text-sm font-bold text-neutral-900">
+            <p className="text-sm font-bold text-foreground">
               {currentChapter.title}
             </p>
           </div>
@@ -51,7 +51,7 @@ export function BottomNavigation({
             {nextChapter && (
               <Link
                 href={`/book/${bookId}/chapter/${nextChapter.number}`}
-                className="inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 transition-colors group"
+                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
               >
                 <div className="text-right">
                   <p className="text-xs text-primary/80">Next chapter</p>

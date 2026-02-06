@@ -28,10 +28,10 @@ export function TemplateTab() {
   return (
     <div className="mt-4 space-y-4">
       <div>
-        <h3 className="mb-1 text-lg font-semibold text-neutral-900">
+        <h3 className="mb-1 text-lg font-semibold text-foreground">
           Chapter Reflection Template
         </h3>
-        <p className="mb-6 text-xs text-neutral-600">
+        <p className="mb-6 text-xs text-muted-foreground">
           Answer these questions to deepen your understanding.
         </p>
       </div>
@@ -39,12 +39,12 @@ export function TemplateTab() {
       <div className="space-y-4">
         {TEMPLATE_QUESTIONS.map((question) => (
           <div key={question.id} className="flex flex-col gap-1">
-            <label className="mb-2 text-sm font-medium text-neutral-700">
+            <label className="mb-2 text-sm font-medium text-muted-foreground">
               {question.label}
             </label>
             <Textarea
               placeholder={question.placeholder}
-              className="min-h-[80px] bg-white resize-none text-sm"
+              className="min-h-[80px] bg-background resize-none text-sm"
             />
           </div>
         ))}

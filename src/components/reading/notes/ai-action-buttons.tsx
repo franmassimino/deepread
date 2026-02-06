@@ -8,7 +8,7 @@ interface AIActionButtonsProps {
 
 export function AIActionButtons({ noteId, onAction }: AIActionButtonsProps) {
   return (
-    <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-200">
+    <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
       <Button
         size="sm"
         variant="outline"

@@ -8,7 +8,7 @@ const createRedisClient = () => {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
   return new Redis(redisUrl, {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null, // Required for BullMQ
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
       return delay;

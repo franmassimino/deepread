@@ -15,11 +15,24 @@ model User {
   name  String?
 }
 
-// Book status enum
+// Enums
 enum BookStatus {
   PROCESSING
   READY
   ERROR
+}
+
+enum JobType {
+  EXTRACT
+  AI_METADATA
+  CONVERT
+}
+
+enum JobStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
 }
 
 // Book model
@@ -41,6 +54,7 @@ model Book {
   chapters            Chapter[]
   readingProgress     ReadingProgress[]
   images              Image[]
+  processingJobs      ProcessingJob[]
 
   @@index([status])
   @@index([createdAt])
@@ -91,4 +105,23 @@ model ReadingProgress {
   book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@unique([bookId, chapterId])
+}
+
+// ProcessingJob model - Tracks PDF processing job chain
+model ProcessingJob {
+  id            String     @id @default(uuid())
+  bookId        String
+  type          JobType
+  status        JobStatus  @default(PENDING)
+  progress      Int        @default(0)
+  error         String?
+  retryCount    Int        @default(0)
+  createdAt     DateTime   @default(now())
+  completedAt   DateTime?
+  
+  book          Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  
+  @@index([bookId])
+  @@index([status])
+  @@index([type])
 }

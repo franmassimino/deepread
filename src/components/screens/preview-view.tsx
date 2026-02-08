@@ -156,7 +156,7 @@ export function PreviewView({ bookId }: { bookId: string }) {
         {/* Header */}
         <div className="mb-6">
           <Button variant="ghost" size="sm" asChild className="mb-4 pl-0">
-            <Link href="/" className="inline-flex items-center gap-2">
+            <Link href="/dashboard" className="inline-flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Library
             </Link>
@@ -281,8 +281,12 @@ export function PreviewView({ bookId }: { bookId: string }) {
           {/* Chapters Tab */}
           <TabsContent value="chapters">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Extracted Chapters</CardTitle>
+              <CardHeader className="border-b bg-muted/30">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Extracted Chapters
+                  <Badge variant="secondary" className="ml-2">{book.chapters.length}</Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {book.chapters.length === 0 ? (
@@ -299,34 +303,42 @@ export function PreviewView({ bookId }: { bookId: string }) {
                       >
                         <div className="border rounded-lg overflow-hidden">
                           <CollapsibleTrigger className="w-full">
-                            <div className="flex items-center justify-between p-4 bg-muted/50 hover:bg-muted transition-colors">
+                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/60 to-muted/30 hover:from-muted/80 hover:to-muted/50 transition-all">
                               <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm shrink-0">
+                                  {chapter.chapterNumber}
+                                </div>
+                                <div className="text-left">
+                                  <span className="font-semibold text-foreground">
+                                    {chapter.title}
+                                  </span>
+                                  <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <Type className="h-3 w-3" />
+                                      {chapter.wordCount.toLocaleString()} words
+                                    </span>
+                                    {chapter.startPage && (
+                                      <span className="flex items-center gap-1">
+                                        <FileText className="h-3 w-3" />
+                                        Pages {chapter.startPage}-{chapter.endPage}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
                                 {expandedChapters.has(chapter.chapterNumber) ? (
                                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                 ) : (
                                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                 )}
-                                <div className="text-left">
-                                  <span className="font-medium">
-                                    Chapter {chapter.chapterNumber}: {chapter.title}
-                                  </span>
-                                  <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                                    <span>{chapter.wordCount.toLocaleString()} words</span>
-                                    {chapter.startPage && (
-                                      <span>Pages {chapter.startPage}-{chapter.endPage}</span>
-                                    )}
-                                  </div>
-                                </div>
                               </div>
-                              <Badge variant="outline" className="font-mono text-xs shrink-0">
-                                ID: {chapter.id.slice(0, 8)}...
-                              </Badge>
                             </div>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
                             <div className="p-4 border-t">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground">Content:</span>
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Chapter Content</span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -343,12 +355,17 @@ export function PreviewView({ bookId }: { bookId: string }) {
                                   </span>
                                 </Button>
                               </div>
-                              <ScrollArea className="h-64 w-full rounded-md border bg-muted/30 p-4">
-                                <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">
-                                  {chapter.content || '(No content)'}
-                                </pre>
+                              <ScrollArea className="h-[500px] w-full rounded-lg border bg-white dark:bg-slate-950 p-8 shadow-inner">
+                                <article className="prose prose-slate dark:prose-invert max-w-none">
+                                  <div 
+                                    className="leading-8 text-[16px] text-foreground whitespace-pre-wrap"
+                                    style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+                                  >
+                                    {chapter.content || '(No content)'}
+                                  </div>
+                                </article>
                               </ScrollArea>
-                              <div className="mt-3 text-xs text-muted-foreground">
+                              <div className="mt-3 text-xs text-muted-foreground border-t pt-3">
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>Created: {new Date(chapter.createdAt).toLocaleString()}</div>
                                   <div>Chapter ID: {chapter.id}</div>

@@ -73,7 +73,7 @@ export function BookOverview({ bookId }: { bookId: string }) {
         {/* Back Link */}
         <Button variant="ghost" size="sm" asChild className="mb-4 pl-0">
           <Link
-            href="/"
+            href="/dashboard"
             className="inline-flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />

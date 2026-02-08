@@ -59,9 +59,9 @@ development_status:
 
   epic-3: in-progress
   3-1-job-queue-system: done
-  3-2-pdf-extraction-worker: review
-  3-3-image-and-table-extraction: review
-  3-4-content-conversion-to-html: backlog
+  3-2-pdf-extraction-worker: done
+  3-3-image-and-table-extraction: backlog
+  3-4-content-conversion-to-html: review
   3-5-job-chain-orchestration: backlog
   3-6-real-time-progress-updates-sse: backlog
   3-7-processing-error-recovery: backlog

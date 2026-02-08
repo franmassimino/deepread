@@ -1,6 +1,6 @@
 # Story 3.2: PDF Text Extraction
 
-Status: review
+Status: done
 
 <!-- MVP Pragmatic Version: No BullMQ, simple async processing with polling -->
 

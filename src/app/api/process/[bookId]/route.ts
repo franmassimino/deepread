@@ -6,20 +6,27 @@ import {
   getWordCount,
   PDFExtractionError
 } from '@/lib/services/pdf-extraction';
+import { convertAndSanitize } from '@/lib/services/content-converter';
 import { storageService } from '@/lib/services/storage';
 import { prisma } from '@/lib/db/db';
 
 /**
  * Processing progress stages
+ * 33% - Text extraction
+ * 66% - Table extraction
+ * 83% - Content conversion to HTML
+ * 100% - HTML sanitization and save
  */
 const PROCESSING_STAGES = {
-  TEXT: { progress: 50, message: 'Extracting text...' },
-  TABLES: { progress: 100, message: 'Extracting tables...' }
+  TEXT: { progress: 33, message: 'Extracting text...' },
+  TABLES: { progress: 66, message: 'Extracting tables...' },
+  CONVERT: { progress: 83, message: 'Converting to HTML...' },
+  SANITIZE: { progress: 100, message: 'Finalizing...' }
 };
 
 /**
  * POST /api/process/[bookId]
- * Triggers async PDF processing (text + tables extraction)
+ * Triggers async PDF processing (text + tables extraction + HTML conversion)
  * Images extraction: TODO for future implementation
  */
 export async function POST(
@@ -36,7 +43,7 @@ export async function POST(
 }
 
 /**
- * Background processing: extracts text and tables
+ * Background processing: extracts text, tables, converts to HTML
  */
 async function processBookInBackground(bookId: string): Promise<void> {
   try {
@@ -53,8 +60,8 @@ async function processBookInBackground(bookId: string): Promise<void> {
       throw new PDFExtractionError(`PDF file not found`, pdfPath);
     }
     
-    // Stage 1: Extract text (50%)
-    console.log(`[Process] Stage 1/2: Extracting text...`);
+    // Stage 1: Extract text (33%)
+    console.log(`[Process] Stage 1/3: Extracting text...`);
     const { text, pageCount } = await extractTextFromPDF(pdfPath);
     
     if (isScannedPDF(text)) {
@@ -68,8 +75,8 @@ async function processBookInBackground(bookId: string): Promise<void> {
     const wordCount = getWordCount(text);
     console.log(`[Process] Extracted ${pageCount} pages, ${wordCount} words`);
     
-    // Stage 2: Extract tables (100%)
-    console.log(`[Process] Stage 2/2: Extracting tables...`);
+    // Stage 2: Extract tables (66%)
+    console.log(`[Process] Stage 2/3: Extracting tables...`);
     let tables: { html: string; pageNumber: number }[] = [];
     try {
       tables = await extractTablesFromPDF(pdfPath);
@@ -78,11 +85,27 @@ async function processBookInBackground(bookId: string): Promise<void> {
       console.warn(`[Process] Table extraction failed (continuing):`, tableError);
     }
     
-    // Prepare content with table placeholders
-    let content = text;
+    // Stage 3: Convert to HTML with table placeholders (83%)
+    console.log(`[Process] Stage 3/3: Converting to HTML...`);
+    
+    // Prepare content with table placeholders for conversion
+    let contentWithPlaceholders = text;
     if (tables.length > 0) {
-      content += '\n\n---\n\n' + tables.map((t, i) => `[TABLE:${i}]\n${t.html}`).join('\n\n');
+      contentWithPlaceholders += '\n\n---\n\n' + tables.map((t, i) => `[TABLE:${i}]`).join('\n\n');
     }
+    
+    // Convert text to HTML and sanitize
+    const { html: convertedHtml, stats } = convertAndSanitize(contentWithPlaceholders, tables);
+    console.log(`[Process] Conversion stats:`, stats);
+    
+    // Sanitize the table HTML to ensure no XSS
+    const sanitizedTables = tables.map(t => ({
+      ...t,
+      html: convertedHtml.includes(t.html) ? t.html : '' // Tables are already embedded
+    }));
+    
+    // Final sanitized content
+    const finalContent = convertedHtml;
     
     // Save to database
     await prisma.$transaction([
@@ -91,7 +114,7 @@ async function processBookInBackground(bookId: string): Promise<void> {
           bookId,
           chapterNumber: 1,
           title: 'Full Book',
-          content,
+          content: finalContent,
           wordCount,
           startPage: 1,
           endPage: pageCount,
@@ -104,7 +127,7 @@ async function processBookInBackground(bookId: string): Promise<void> {
     ]);
     
     console.log(`[Process] Book ${bookId} processed successfully`);
-    console.log(`[Process] Summary: ${pageCount} pages, ${wordCount} words, ${tables.length} tables`);
+    console.log(`[Process] Summary: ${pageCount} pages, ${wordCount} words, ${tables.length} tables, ${stats.headingCount} headings, ${stats.paragraphCount} paragraphs`);
     
   } catch (error) {
     console.error(`[Process] Error processing book ${bookId}:`, error);

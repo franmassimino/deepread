@@ -1,6 +1,6 @@
 # Story 3.3: Image and Table Extraction
 
-Status: ready-for-dev
+Status: backlog
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

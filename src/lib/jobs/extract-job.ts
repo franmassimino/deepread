@@ -2,7 +2,8 @@ import { Job } from 'bullmq';
 import { extractTextFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount, PDFExtractionError } from '@/lib/services/pdf-extraction';
 import { storageService } from '@/lib/services/storage';
 import { prisma } from '@/lib/db/db';
-import { updateProcessingJob, handleJobFailure, createNextJob } from './job-utils';
+import { pdfQueue } from '@/lib/services/queue';
+import { updateProcessingJob, handleJobFailure } from './job-utils';
 
 export interface ExtractJobData {
   bookId: string;
@@ -18,7 +19,7 @@ export interface ExtractJobResult {
 
 /**
  * EXTRACT job processor
- * Extracts text and tables from PDF
+ * Extracts text and tables from PDF, then queues AI_METADATA job with results
  */
 export async function extractProcessor(job: Job<ExtractJobData>): Promise<ExtractJobResult> {
   const { bookId, processingJobId } = job.data;
@@ -74,18 +75,33 @@ export async function extractProcessor(job: Job<ExtractJobData>): Promise<Extrac
     
     console.log(`[ExtractJob] Completed for book ${bookId}`);
     
-    // Create AI_METADATA job
-    const nextJobId = await createNextJob(bookId, 'AI_METADATA');
-    if (nextJobId) {
-      console.log(`[ExtractJob] Queued AI_METADATA job ${nextJobId}`);
-    }
-    
-    return {
+    // Prepare result
+    const result: ExtractJobResult = {
       text,
       pageCount,
       tables,
       wordCount,
     };
+    
+    // Create and queue AI_METADATA job with extraction results
+    const nextProcessingJob = await prisma.processingJob.create({
+      data: {
+        bookId,
+        type: 'AI_METADATA',
+        status: 'PENDING',
+        progress: 0,
+      },
+    });
+    
+    await pdfQueue.add('AI_METADATA', {
+      bookId,
+      processingJobId: nextProcessingJob.id,
+      extractionResult: result,
+    });
+    
+    console.log(`[ExtractJob] Queued AI_METADATA job ${nextProcessingJob.id} with extraction data`);
+    
+    return result;
     
   } catch (error) {
     await handleJobFailure(processingJobId, bookId, error);

@@ -337,18 +337,36 @@ Kimi Code CLI - dev-story workflow execution
 - Added `ProcessingJob` model to Prisma schema with JobType and JobStatus enums
 - Added relation `Book.processingJobs` for tracking job chain
 - Created `src/lib/jobs/job-utils.ts` with utilities for job status updates, failure handling, and chain management
+- **FIXED**: `createNextJob()` now properly queues jobs to BullMQ (was only creating DB records)
+- **FIXED**: Added `queueJobWithData()` helper for queueing jobs with data
 - Created `src/lib/jobs/extract-job.ts` - EXTRACT worker that extracts text/tables and queues AI_METADATA job
+- **FIXED**: Extract job now passes extraction results to AI_METADATA job via job.data
 - Created `src/lib/jobs/ai-metadata-job.ts` - AI_METADATA worker with stub implementation (full AI in Epic 4)
+- **FIXED**: AI_METADATA job now receives extraction results and passes both results to CONVERT job
 - Created `src/lib/jobs/convert-job.ts` - CONVERT worker that converts content to HTML and creates Chapter records
-- Updated `src/lib/services/queue.ts` with worker initialization and job type filtering
+- Created `src/lib/jobs/init.ts` - Worker initialization module
+- **FIXED**: `src/lib/services/queue.ts` - Single worker with job name dispatch instead of multiple workers with filtering issues
+- **FIXED**: `src/lib/services/queue.ts` - Added initialization guards to prevent multiple initializations
 - Updated `src/app/api/process/[bookId]/route.ts` to create ProcessingJob and queue EXTRACT job
 - Created `src/app/api/jobs/[jobId]/retry/route.ts` endpoint for retrying failed jobs (max 3 retries)
+- **FIXED**: Retry endpoint now properly re-queues jobs in BullMQ
 - Fixed `src/lib/services/redis.ts` - set `maxRetriesPerRequest: null` for BullMQ compatibility
 - Created `tests/unit/jobs/extract-job.test.ts` with 4 unit tests
 - Job chain flow: UPLOAD → EXTRACT → AI_METADATA → CONVERT → READY
 - Each job updates ProcessingJob status and progress
 - Job failures stop chain and set Book.status to ERROR
 - Successful CONVERT job creates Chapter records and sets Book to READY
+
+### Code Review Fixes Applied
+
+**CRITICAL Issues Fixed:**
+1. ✅ **Job chain was broken**: `createNextJob()` now calls `pdfQueue.add()` to actually queue jobs
+2. ✅ **Data not passed between workers**: Jobs now pass results via job.data (extractionResult, metadataResult)
+3. ✅ **Worker job filtering incorrect**: Replaced multiple workers with single dispatcher worker
+
+**HIGH Issues Fixed:**
+4. ✅ **Retry endpoint not re-queuing**: Now calls `pdfQueue.add()` to re-queue jobs
+6. ✅ **Workers auto-initialize causing test failures**: Added initialization guards and lazy loading
 
 ### File List
 

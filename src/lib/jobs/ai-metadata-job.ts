@@ -1,12 +1,12 @@
 import { Job } from 'bullmq';
 import { prisma } from '@/lib/db/db';
-import { updateProcessingJob, handleJobFailure, createNextJob } from './job-utils';
+import { pdfQueue } from '@/lib/services/queue';
+import { updateProcessingJob, handleJobFailure } from './job-utils';
 import { ExtractJobResult } from './extract-job';
 
 export interface AIMetadataJobData {
   bookId: string;
   processingJobId: string;
-  // Pass through data from extract job
   extractionResult: ExtractJobResult;
 }
 
@@ -20,6 +20,7 @@ export interface AIMetadataJobResult {
 /**
  * AI_METADATA job processor
  * Generates summary, detects chapters, extracts metadata
+ * Then queues CONVERT job with all data
  * 
  * NOTE: This is a stub implementation for MVP
  * Full implementation requires Mastra AI integration (Epic 4)
@@ -97,17 +98,33 @@ export async function aiMetadataProcessor(job: Job<AIMetadataJobData>): Promise<
     
     console.log(`[AIMetadataJob] Completed for book ${bookId}`);
     
-    // Create CONVERT job
-    const nextJobId = await createNextJob(bookId, 'CONVERT');
-    if (nextJobId) {
-      console.log(`[AIMetadataJob] Queued CONVERT job ${nextJobId}`);
-    }
-    
-    return {
+    // Prepare result
+    const result: AIMetadataJobResult = {
       summary,
       chapters,
       detectedTitle,
     };
+    
+    // Create and queue CONVERT job with both extraction and metadata results
+    const nextProcessingJob = await prisma.processingJob.create({
+      data: {
+        bookId,
+        type: 'CONVERT',
+        status: 'PENDING',
+        progress: 0,
+      },
+    });
+    
+    await pdfQueue.add('CONVERT', {
+      bookId,
+      processingJobId: nextProcessingJob.id,
+      extractionResult,
+      metadataResult: result,
+    });
+    
+    console.log(`[AIMetadataJob] Queued CONVERT job ${nextProcessingJob.id} with full data`);
+    
+    return result;
     
   } catch (error) {
     await handleJobFailure(processingJobId, bookId, error);

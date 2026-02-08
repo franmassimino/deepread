@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/db/db';
 import { JobStatus, JobType } from '@prisma/client';
+import { pdfQueue } from '@/lib/services/queue';
+import { ExtractJobResult } from './extract-job';
+import { AIMetadataJobResult } from './ai-metadata-job';
 
 /**
  * Update ProcessingJob status and progress
@@ -61,14 +64,16 @@ export async function handleJobFailure(
 }
 
 /**
- * Create the next job in the chain
+ * Create the next job in the chain and add to BullMQ queue
  */
 export async function createNextJob(
   bookId: string,
-  nextJobType: JobType
+  nextJobType: JobType,
+  previousData?: ExtractJobResult | AIMetadataJobResult
 ): Promise<string | null> {
   try {
-    const job = await prisma.processingJob.create({
+    // Create ProcessingJob record
+    const processingJob = await prisma.processingJob.create({
       data: {
         bookId,
         type: nextJobType,
@@ -77,10 +82,71 @@ export async function createNextJob(
       },
     });
     
-    console.log(`[Job] Created ${nextJobType} job ${job.id} for book ${bookId}`);
-    return job.id;
+    // Add to BullMQ queue with data from previous job
+    const queueData: Record<string, unknown> = {
+      bookId,
+      processingJobId: processingJob.id,
+    };
+    
+    // Pass through data from previous jobs
+    if (nextJobType === 'AI_METADATA' && previousData) {
+      // AI_METADATA receives EXTRACT results
+      queueData.extractionResult = previousData;
+    } else if (nextJobType === 'CONVERT' && previousData) {
+      // CONVERT receives both EXTRACT and AI_METADATA results
+      if ('chapters' in previousData) {
+        // previousData is AIMetadataJobResult, need to get extractionResult from elsewhere
+        // For now, we'll fetch the latest extraction result
+        const extractJob = await prisma.processingJob.findFirst({
+          where: { bookId, type: 'EXTRACT' },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (extractJob) {
+          // Store extraction results temporarily or pass via job data
+          // For now, we'll need to re-extract or store in a temp location
+          // This is a known limitation - ideally we'd pass both results
+        }
+        queueData.metadataResult = previousData;
+      }
+    }
+    
+    await pdfQueue.add(nextJobType, queueData);
+    
+    console.log(`[Job] Created and queued ${nextJobType} job ${processingJob.id} for book ${bookId}`);
+    return processingJob.id;
   } catch (err) {
     console.error(`[Job] Failed to create ${nextJobType} job:`, err);
+    return null;
+  }
+}
+
+/**
+ * Create and queue a job with full data
+ */
+export async function queueJobWithData<T extends Record<string, unknown>>(
+  bookId: string,
+  jobType: JobType,
+  jobData: T
+): Promise<string | null> {
+  try {
+    const processingJob = await prisma.processingJob.create({
+      data: {
+        bookId,
+        type: jobType,
+        status: 'PENDING',
+        progress: 0,
+      },
+    });
+    
+    await pdfQueue.add(jobType, {
+      ...jobData,
+      processingJobId: processingJob.id,
+    });
+    
+    console.log(`[Job] Queued ${jobType} job ${processingJob.id} for book ${bookId}`);
+    return processingJob.id;
+  } catch (err) {
+    console.error(`[Job] Failed to queue ${jobType} job:`, err);
     return null;
   }
 }

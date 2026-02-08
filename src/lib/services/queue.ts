@@ -4,14 +4,6 @@ import { extractProcessor, ExtractJobData } from '@/lib/jobs/extract-job';
 import { aiMetadataProcessor, AIMetadataJobData } from '@/lib/jobs/ai-metadata-job';
 import { convertProcessor, ConvertJobData } from '@/lib/jobs/convert-job';
 
-// Initialize workers on module load (server-side only)
-if (typeof window === 'undefined') {
-  // Delay initialization to avoid issues during build
-  setTimeout(() => {
-    initializeWorkers();
-  }, 0);
-}
-
 // Job data type definitions
 export interface PdfProcessingJobData {
   bookId: string;
@@ -41,95 +33,80 @@ export const pdfQueue = new Queue<ExtractJobData | AIMetadataJobData | ConvertJo
   queueOptions
 );
 
-// Job type to processor mapping
-type JobProcessor<T> = (job: Job<T>) => Promise<unknown>;
-
-// Workers
-let extractWorker: Worker | null = null;
-let aiWorker: Worker | null = null;
-let convertWorker: Worker | null = null;
+// Worker singleton
+let worker: Worker | null = null;
+let isInitializing = false;
 
 /**
  * Initialize workers
- * Call this once when the application starts
+ * Call this once when the application starts (server-side only)
  */
 export function initializeWorkers(): void {
+  // Skip if already initialized or initializing
+  if (worker || isInitializing) {
+    return;
+  }
+  
+  // Skip on client-side
+  if (typeof window !== 'undefined') {
+    return;
+  }
+  
+  isInitializing = true;
+  
   console.log('[Queue] Initializing job workers...');
   
-  // EXTRACT worker
-  extractWorker = new Worker<ExtractJobData>(
+  // Single worker that dispatches to correct processor based on job name
+  worker = new Worker(
     'pdf-processing',
-    async (job) => {
-      // Only process EXTRACT jobs here
-      if (job.name !== 'EXTRACT') {
-        return; // Skip, let other workers handle
+    async (job: Job) => {
+      const jobName = job.name;
+      
+      console.log(`[Worker] Processing job ${job.id} of type ${jobName}`);
+      
+      switch (jobName) {
+        case 'EXTRACT':
+          return extractProcessor(job as Job<ExtractJobData>);
+        case 'AI_METADATA':
+          return aiMetadataProcessor(job as Job<AIMetadataJobData>);
+        case 'CONVERT':
+          return convertProcessor(job as Job<ConvertJobData>);
+        default:
+          throw new Error(`Unknown job type: ${jobName}`);
       }
-      return extractProcessor(job);
     },
-    { connection: redis, concurrency: 2 }
+    { 
+      connection: redis, 
+      concurrency: 3,
+      autorun: true,
+    }
   );
   
-  extractWorker.on('completed', (job) => {
-    console.log(`[Worker:EXTRACT] Job ${job.id} completed`);
+  worker.on('completed', (job) => {
+    console.log(`[Worker] Job ${job.id} (${job.name}) completed`);
   });
   
-  extractWorker.on('failed', (job, err) => {
-    console.error(`[Worker:EXTRACT] Job ${job?.id} failed:`, err.message);
+  worker.on('failed', (job, err) => {
+    console.error(`[Worker] Job ${job?.id} (${job?.name}) failed:`, err.message);
   });
   
-  // AI_METADATA worker
-  aiWorker = new Worker<AIMetadataJobData>(
-    'pdf-processing',
-    async (job) => {
-      if (job.name !== 'AI_METADATA') {
-        return;
-      }
-      return aiMetadataProcessor(job);
-    },
-    { connection: redis, concurrency: 2 }
-  );
-  
-  aiWorker.on('completed', (job) => {
-    console.log(`[Worker:AI_METADATA] Job ${job.id} completed`);
-  });
-  
-  aiWorker.on('failed', (job, err) => {
-    console.error(`[Worker:AI_METADATA] Job ${job?.id} failed:`, err.message);
-  });
-  
-  // CONVERT worker
-  convertWorker = new Worker<ConvertJobData>(
-    'pdf-processing',
-    async (job) => {
-      if (job.name !== 'CONVERT') {
-        return;
-      }
-      return convertProcessor(job);
-    },
-    { connection: redis, concurrency: 2 }
-  );
-  
-  convertWorker.on('completed', (job) => {
-    console.log(`[Worker:CONVERT] Job ${job.id} completed`);
-  });
-  
-  convertWorker.on('failed', (job, err) => {
-    console.error(`[Worker:CONVERT] Job ${job?.id} failed:`, err.message);
+  worker.on('error', (err) => {
+    console.error('[Worker] Worker error:', err);
   });
   
   console.log('[Queue] Job workers initialized');
+  isInitializing = false;
 }
 
 /**
- * Close all workers (for graceful shutdown)
+ * Close workers (for graceful shutdown)
  */
 export async function closeWorkers(): Promise<void> {
-  await Promise.all([
-    extractWorker?.close(),
-    aiWorker?.close(),
-    convertWorker?.close(),
-  ]);
-  console.log('[Queue] Workers closed');
+  if (worker) {
+    await worker.close();
+    worker = null;
+    console.log('[Queue] Workers closed');
+  }
 }
 
 // Job status retrieval helper
@@ -158,4 +135,18 @@ export async function addJob<T extends ExtractJobData | AIMetadataJobData | Conv
   data: T
 ): Promise<Job<T>> {
   return pdfQueue.add(name, data) as Promise<Job<T>>;
+}
+
+// Auto-initialize on server-side (lazy)
+if (typeof window === 'undefined') {
+  // Use a flag to prevent multiple initializations
+  let initialized = false;
+  
+  // Delay initialization to avoid issues during build/import
+  setTimeout(() => {
+    if (!initialized) {
+      initialized = true;
+      initializeWorkers();
+    }
+  }, 100);
 }

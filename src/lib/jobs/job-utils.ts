@@ -110,7 +110,8 @@ export async function createNextJob(
       }
     }
     
-    await pdfQueue.add(nextJobType, queueData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await pdfQueue.add(nextJobType, queueData as any);
     
     console.log(`[Job] Created and queued ${nextJobType} job ${processingJob.id} for book ${bookId}`);
     return processingJob.id;
@@ -138,10 +139,11 @@ export async function queueJobWithData<T extends Record<string, unknown>>(
       },
     });
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await pdfQueue.add(jobType, {
       ...jobData,
       processingJobId: processingJob.id,
-    });
+    } as any);
     
     console.log(`[Job] Queued ${jobType} job ${processingJob.id} for book ${bookId}`);
     return processingJob.id;

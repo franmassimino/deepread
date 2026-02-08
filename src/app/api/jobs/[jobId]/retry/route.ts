@@ -98,7 +98,8 @@ export async function POST(
     }
     
     // Add to BullMQ queue
-    await pdfQueue.add(type, jobData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await pdfQueue.add(type, jobData as any);
     
     console.log(`[Retry] Job ${jobId} (${type}) re-queued successfully (retry ${processingJob.retryCount + 1})`);
     

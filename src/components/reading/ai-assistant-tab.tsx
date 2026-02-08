@@ -30,8 +30,8 @@ export function AIAssistantTab() {
   return (
     <div className="mt-6 space-y-4">
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-neutral-900">AI Assistant</h3>
-        <p className="mb-6 text-xs text-neutral-600">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">AI Assistant</h3>
+        <p className="mb-6 text-xs text-muted-foreground">
           Contextual tools to deepen your understanding.
         </p>
       </div>
@@ -39,7 +39,7 @@ export function AIAssistantTab() {
       {AI_TOOLS.map((tool) => {
         const Icon = tool.icon
         return (
-          <Card key={tool.id} className="border-neutral-200 gap-3">
+          <Card key={tool.id} className="border-border gap-3">
             <CardHeader className="">
               <CardTitle className="flex items-center gap-2 text-md font-medium">
                 <Icon className="h-4 w-4" />
@@ -47,7 +47,7 @@ export function AIAssistantTab() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-md text-neutral-600">
+              <p className="text-md text-muted-foreground">
                 {tool.description}
               </p>
               <Button size="lg" className="w-full text-xs">

@@ -14,6 +14,10 @@ vi.mock('@/lib/db/db', () => ({
     chapter: {
       create: vi.fn(),
     },
+    $transaction: vi.fn(async (operations) => {
+      // $transaction receives an array of operations
+      return Promise.all(operations.map((op: Promise<unknown>) => op));
+    }),
   },
 }));
 
@@ -24,13 +28,18 @@ vi.mock('@/lib/services/storage', () => ({
   },
 }));
 
-vi.mock('@/lib/services/pdf-extraction', () => ({
-  extractTextFromPDF: vi.fn(),
-  isScannedPDF: vi.fn(),
-  getWordCount: vi.fn(),
-}));
+vi.mock('@/lib/services/pdf-extraction', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/services/pdf-extraction')>('@/lib/services/pdf-extraction');
+  return {
+    ...actual,
+    extractTextFromPDF: vi.fn(),
+    extractTablesFromPDF: vi.fn(),
+    isScannedPDF: vi.fn(),
+    getWordCount: vi.fn(),
+  };
+});
 
-import { extractTextFromPDF, isScannedPDF, getWordCount } from '@/lib/services/pdf-extraction';
+import { extractTextFromPDF, extractTablesFromPDF, isScannedPDF, getWordCount } from '@/lib/services/pdf-extraction';
 
 describe('Process API Route', () => {
   beforeEach(() => {
@@ -57,6 +66,7 @@ describe('Process API Route', () => {
     });
     vi.mocked(isScannedPDF).mockReturnValue(false);
     vi.mocked(getWordCount).mockReturnValue(100);
+    vi.mocked(extractTablesFromPDF).mockResolvedValue([]);
     vi.mocked(storageService.getFilePath).mockReturnValue('/storage/pdfs/test-book-id/test.pdf');
 
     const request = new NextRequest('http://localhost:3000/api/process/test-book-id', {
@@ -74,8 +84,6 @@ describe('Process API Route', () => {
 
 describe('Status API Route', () => {
   it('should be implemented', () => {
-    // Status route tests would go here
-    // Testing the GET handler for /api/books/[id]/status
     expect(true).toBe(true);
   });
 });

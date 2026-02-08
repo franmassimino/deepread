@@ -23,8 +23,8 @@ export function HighlighterToolbar({ selectedColor, onColorSelect }: Highlighter
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        <Highlighter className="h-4 w-4 text-neutral-600" />
-        <span className="text-xs font-medium text-neutral-700">Rotulador:</span>
+        <Highlighter className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground">Rotulador:</span>
       </div>
       <div className="flex gap-2">
         {colors.map((color) => (
@@ -35,8 +35,8 @@ export function HighlighterToolbar({ selectedColor, onColorSelect }: Highlighter
               'h-7 w-7 rounded border-2 transition-all',
               color.className,
               selectedColor === color.value
-                ? 'border-neutral-900 ring-2 ring-neutral-900 ring-offset-1'
-                : 'border-neutral-300 hover:border-neutral-400'
+                ? 'border-foreground ring-2 ring-foreground ring-offset-1'
+                : 'border-border hover:border-muted-foreground/60'
             )}
             title={color.label}
             aria-label={color.label}

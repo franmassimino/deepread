@@ -59,7 +59,7 @@ export function NoteCard({ note, onEdit, onDelete, onAIAction }: NoteCardProps) 
       {isEditing ? (
         <div className="">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-neutral-700">Color:</span>
+            <span className="text-xs font-medium text-muted-foreground">Color:</span>
             <Select value={editColor} onValueChange={(value) => setEditColor(value as NoteColor)}>
               <SelectTrigger className="w-[140px] h-8 text-xs">
                 <SelectValue />
@@ -82,14 +82,14 @@ export function NoteCard({ note, onEdit, onDelete, onAIAction }: NoteCardProps) 
           </div>
           <Input
             placeholder="Title (optional)"
-            className="border-neutral-200 text-sm bg-white"
+            className="border-border text-sm bg-background"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
           />
           <Textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
-            className="min-h-[150px] resize-none border-neutral-200 text-sm leading-relaxed bg-white"
+            className="min-h-[150px] resize-none border-border text-sm leading-relaxed bg-background"
             autoFocus
           />
           <div className="flex justify-end gap-2">
@@ -106,7 +106,7 @@ export function NoteCard({ note, onEdit, onDelete, onAIAction }: NoteCardProps) 
       ) : (
         <>
           <div className="flex items-start justify-between">
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-muted-foreground/80">
               {note.createdAt.toLocaleDateString()}{' '}
               {note.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -115,7 +115,7 @@ export function NoteCard({ note, onEdit, onDelete, onAIAction }: NoteCardProps) 
                 size="sm"
                 variant="ghost"
                 onClick={handleStartEdit}
-                className="h-7 w-7 p-0 text-neutral-600 hover:text-neutral-900"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
               >
                 <Edit2 className="h-3 w-3" />
               </Button>
@@ -123,7 +123,7 @@ export function NoteCard({ note, onEdit, onDelete, onAIAction }: NoteCardProps) 
                 size="sm"
                 variant="ghost"
                 onClick={() => onDelete(note.id)}
-                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-500/10"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>

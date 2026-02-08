@@ -43,17 +43,17 @@ export function BookUploadItem({
   const getStatusDisplay = () => {
     switch (status) {
       case 'uploading':
-        return { label: 'Uploading...', color: 'text-neutral-600' };
+        return { label: 'Uploading...', color: 'text-muted-foreground' };
       case 'processing':
         return { label: 'Processing...', color: 'text-blue-600' };
       case 'ready':
-        return { label: 'New', color: 'text-neutral-500' };
+        return { label: 'New', color: 'text-muted-foreground/80' };
       case 'error':
         return { label: error || 'Upload failed', color: 'text-red-600' };
       case 'cancelled':
-        return { label: 'Cancelled', color: 'text-neutral-500' };
+        return { label: 'Cancelled', color: 'text-muted-foreground/80' };
       default:
-        return { label: 'Processing...', color: 'text-neutral-600' };
+        return { label: 'Processing...', color: 'text-muted-foreground' };
     }
   };
 
@@ -62,26 +62,26 @@ export function BookUploadItem({
   const getBackgroundStyle = () => {
     switch (status) {
       case 'ready':
-        return 'bg-neutral-100';
+        return 'bg-muted';
       case 'error':
         return 'bg-red-50';
       case 'cancelled':
-        return 'bg-neutral-100';
+        return 'bg-muted';
       case 'processing':
         return 'bg-blue-50';
       default:
-        return 'bg-neutral-100';
+        return 'bg-muted';
     }
   };
 
   const getIcon = () => {
     switch (status) {
       case 'ready':
-        return <CheckCircle className="h-8 w-8 text-neutral-400" />;
+        return <CheckCircle className="h-8 w-8 text-muted-foreground/60" />;
       case 'error':
         return <AlertCircle className="h-8 w-8 text-red-500" />;
       case 'cancelled':
-        return <XCircle className="h-8 w-8 text-neutral-400" />;
+        return <XCircle className="h-8 w-8 text-muted-foreground/60" />;
       case 'processing':
         return <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />;
       default:
@@ -96,11 +96,11 @@ export function BookUploadItem({
   const getProgressBarColor = () => {
     switch (status) {
       case 'ready':
-        return '[&>div]:bg-neutral-400';
+        return '[&>div]:bg-muted-foreground/60';
       case 'error':
         return '[&>div]:bg-red-500';
       case 'cancelled':
-        return '[&>div]:bg-neutral-400';
+        return '[&>div]:bg-muted-foreground/60';
       case 'processing':
         return '[&>div]:bg-blue-500';
       default:
@@ -122,13 +122,13 @@ export function BookUploadItem({
   };
 
   return (
-    <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-neutral-200' : status === 'processing' ? 'border-blue-200' : ''}`}>
+    <Card className={`relative overflow-hidden h-full flex flex-col ${status === 'error' ? 'border-red-200' : status === 'ready' ? 'border-border' : status === 'processing' ? 'border-blue-200' : ''}`}>
       <CardContent className="flex-1 flex flex-col">
         {/* Book Cover Placeholder with Status-based Animation */}
         <div className={`mb-4 flex h-48 items-center justify-center rounded-lg ${getBackgroundStyle()} p-4 relative shrink-0`}>
           {/* Animated gradient background for active processing */}
           {isActivelyProcessing && (
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-100 via-neutral-200 to-neutral-100 animate-shimmer rounded-lg"
+            <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-shimmer rounded-lg"
                  style={{
                    backgroundSize: '200% 100%',
                    animation: 'shimmer 2s infinite linear'
@@ -153,7 +153,7 @@ export function BookUploadItem({
             <Button
               variant="ghost"
               size="sm"
-              className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-neutral-200/80 z-20"
+              className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-accent z-20"
               onClick={() => onCancel(id)}
               title="Cancel upload"
             >
@@ -165,7 +165,7 @@ export function BookUploadItem({
         {/* Book Info */}
         <div className="space-y-3 flex-1 flex flex-col">
           <div className="shrink-0">
-            <h3 className="font-semibold leading-tight text-neutral-900 line-clamp-2">
+            <h3 className="font-semibold leading-tight text-foreground line-clamp-2">
               {displayName}
             </h3>
             <p className={`mt-1 text-sm ${statusDisplay.color}`}>
@@ -176,10 +176,10 @@ export function BookUploadItem({
           {/* Progress */}
           <div className="space-y-2 shrink-0">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-600 text-xs">
+              <span className="text-muted-foreground text-xs">
                 {getCurrentStepLabel()}
               </span>
-              <span className="font-medium text-neutral-900">{Math.round(getVisualProgress())}%</span>
+              <span className="font-medium text-foreground">{Math.round(getVisualProgress())}%</span>
             </div>
             <Progress value={getVisualProgress()} className={`h-1.5 ${getProgressBarColor()}`} />
           </div>
@@ -198,7 +198,7 @@ export function BookUploadItem({
                       ? "w-1.5 h-1.5 bg-primary"
                       : index === currentStep
                       ? "w-2 h-2 bg-primary animate-pulse"
-                      : "w-1.5 h-1.5 bg-neutral-300"
+                      : "w-1.5 h-1.5 bg-muted-foreground/30"
                   }`}
                 />
               ))}
@@ -222,7 +222,7 @@ export function BookUploadItem({
 
           {/* Ready indicator */}
           {status === 'ready' && (
-            <div className="flex items-center justify-center gap-2 pt-2 shrink-0 text-neutral-500 text-sm">
+            <div className="flex items-center justify-center gap-2 pt-2 shrink-0 text-muted-foreground/80 text-sm;">
               <CheckCircle className="h-4 w-4" />
               <span>Added to library</span>
             </div>

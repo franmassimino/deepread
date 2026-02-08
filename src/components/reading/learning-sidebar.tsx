@@ -24,11 +24,11 @@ export function LearningSidebar({ isOpen, onToggle, activeTab, onTabChange }: Le
   }
 
   return (
-    <div className="h-full bg-white border-l flex flex-col">
+    <div className="h-full bg-background border-l flex flex-col">
       {/* Sidebar Header with Toggle */}
       <div className={`flex items-center justify-between border-b shrink-0 ${isOpen ? 'p-2' : 'p-1'}`}>
         {isOpen && (
-          <h3 className="text-sm font-semibold text-neutral-900 pl-4 whitespace-nowrap">
+          <h3 className="text-sm font-semibold text-foreground pl-4 whitespace-nowrap">
             Learning Tools
           </h3>
         )}
@@ -36,7 +36,7 @@ export function LearningSidebar({ isOpen, onToggle, activeTab, onTabChange }: Le
           variant="ghost"
           size="sm"
           onClick={onToggle}
-          className={`text-neutral-600 hover:text-neutral-900 shrink-0 ${isOpen ? 'ml-auto' : 'mx-auto'}`}
+          className={`text-muted-foreground hover:text-foreground shrink-0 ${isOpen ? 'ml-auto' : 'mx-auto'}`}
         >
           {isOpen ? (
             <PanelRightClose className="h-4 w-4 mr-2" />
@@ -84,30 +84,30 @@ export function LearningSidebar({ isOpen, onToggle, activeTab, onTabChange }: Le
             variant="ghost"
             size="sm"
             onClick={() => handleOpenWithTab('notes')}
-            className="flex flex-col items-center justify-center h-10 w-10 p-1 hover:bg-neutral-100 rounded-lg group"
+            className="flex flex-col items-center justify-center h-10 w-10 p-1 hover:bg-accent rounded-lg group"
             title="Notes"
           >
-            <StickyNote className="h-5 w-5 text-neutral-600 group-hover:text-neutral-900 mb-1" />
+            <StickyNote className="h-5 w-5 text-muted-foreground group-hover:text-foreground mb-1" />
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleOpenWithTab('template')}
-            className="flex flex-col items-center justify-center h-10 w-10 p-1 hover:bg-neutral-100 rounded-lg group"
+            className="flex flex-col items-center justify-center h-10 w-10 p-1 hover:bg-accent rounded-lg group"
             title="Template"
           >
-            <FileText className="h-5 w-5 text-neutral-600 group-hover:text-neutral-900 mb-1" />
+            <FileText className="h-5 w-5 text-muted-foreground group-hover:text-foreground mb-1" />
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleOpenWithTab('ai')}
-            className="flex flex-col items-center justify-center h-10 w-10 p-1 hover:bg-neutral-100 rounded-lg group"
+            className="flex flex-col items-center justify-center h-10 w-10 p-1 hover:bg-accent rounded-lg group"
             title="AI Assistant"
           >
-            <Sparkles className="h-5 w-5 text-neutral-600 group-hover:text-neutral-900 mb-1" />
+            <Sparkles className="h-5 w-5 text-muted-foreground group-hover:text-foreground mb-1" />
           </Button>
         </div>
       )}

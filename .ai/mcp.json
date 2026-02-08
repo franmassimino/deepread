@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "pencil": {
+      "command": "c:\\Users\\Francisco\\.cursor\\extensions\\highagency.pencildev-0.6.21-universal\\out\\mcp-server-windows-x64.exe",
+      "args": [
+        "--app",
+        "cursor"
+      ],
+      "env": {}
+    }
+  }
+}

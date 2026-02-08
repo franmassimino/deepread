@@ -30,7 +30,7 @@ export function TextSelectionPopover({ position, onAction, selectedColor }: Text
         transform: 'translate(-50%, -120%)',
       }}
     >
-      <div className="rounded-lg border border-neutral-200 bg-white shadow-lg">
+      <div className="rounded-lg border border-border bg-background shadow-lg">
         <div className="flex items-center gap-1 p-1">
           <Button
             variant="ghost"
@@ -38,11 +38,11 @@ export function TextSelectionPopover({ position, onAction, selectedColor }: Text
             className="h-9 gap-2 px-3 text-xs"
             onClick={() => onAction('highlight')}
           >
-            <div className={`h-4 w-4 rounded border border-neutral-300 ${colorClasses[selectedColor]}`} />
+            <div className={`h-4 w-4 rounded border border-border ${colorClasses[selectedColor]}`} />
             Subrayar
           </Button>
 
-          <div className="h-6 w-px bg-neutral-200" />
+          <div className="h-6 w-px bg-border" />
 
           <Button
             variant="ghost"

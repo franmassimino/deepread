@@ -17,8 +17,8 @@ export function ColorSelector({ selectedColor, onColorChange }: ColorSelectorPro
             onClick={() => onColorChange(color as NoteColor)}
             className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${colorScheme.bg} ${
               isSelected
-                ? `${colorScheme.border} ring-2 ring-offset-1 ring-neutral-400`
-                : 'border-neutral-300 hover:border-neutral-400'
+                ? `${colorScheme.border} ring-2 ring-offset-1 ring-muted-foreground/60`
+                : 'border-border hover:border-muted-foreground/60'
             }`}
             title={color.charAt(0).toUpperCase() + color.slice(1)}
           />

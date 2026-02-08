@@ -71,7 +71,7 @@ export function NotesTab() {
   return (
     <div className="mt-4">
       <div className="mb-10">
-        <h3 className="text-sm font-semibold text-neutral-900 mb-3">Your Notes</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-3">Your Notes</h3>
 
         <NoteForm
           title={newNoteTitle}
@@ -89,7 +89,7 @@ export function NotesTab() {
       {/* Notes List */}
       <div className="space-y-3">
         {notes.length === 0 ? (
-          <div className="text-center py-12 text-neutral-500">
+          <div className="text-center py-12 text-muted-foreground">
             <p className="text-sm">No notes yet.</p>
             <p className="text-xs mt-1">Start by adding your first note above.</p>
           </div>

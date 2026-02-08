@@ -88,7 +88,7 @@ export function ReadingView({ bookId, chapterId }: { bookId: string; chapterId: 
   }
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-50 overflow-hidden">
+    <div className="flex h-screen flex-col bg-background overflow-hidden">
       <ReadingHeader />
 
       <ChapterNavigationBar

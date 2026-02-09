@@ -114,6 +114,8 @@ model ProcessingJob {
   type          JobType
   status        JobStatus  @default(PENDING)
   progress      Int        @default(0)
+  stage         String?    // Current processing stage for SSE updates
+  message       String?    // Human-readable status message
   error         String?
   retryCount    Int        @default(0)
   createdAt     DateTime   @default(now())

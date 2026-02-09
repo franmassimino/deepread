@@ -32,11 +32,12 @@ export async function aiMetadataProcessor(job: Job<AIMetadataJobData>): Promise<
   console.log(`[AIMetadataJob] Starting AI processing for book ${bookId}, job ${processingJobId}`);
   
   // Update job status to ACTIVE
-  await updateProcessingJob(processingJobId, 'ACTIVE', 0);
+  await updateProcessingJob(processingJobId, 'ACTIVE', 0, undefined, 'ai-analysis', 'Analyzing content...');
   
   try {
     // Stage 1: Generate summary (0-40%)
     await job.updateProgress(10);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 10, undefined, 'ai-analysis', 'Generating summary...');
     
     // For MVP, create a simple summary from first 500 words
     const summaryText = text.slice(0, 2000);
@@ -45,10 +46,11 @@ export async function aiMetadataProcessor(job: Job<AIMetadataJobData>): Promise<
       : 'Summary unavailable';
     
     await job.updateProgress(40);
-    await updateProcessingJob(processingJobId, 'ACTIVE', 40);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 40, undefined, 'ai-analysis', 'Summary generated');
     
     // Stage 2: Detect chapters (40-70%)
     await job.updateProgress(50);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 50, undefined, 'ai-analysis', 'Detecting chapters...');
     
     // For MVP, create a single chapter with all content
     // Full implementation will use Mastra to detect chapter boundaries
@@ -75,17 +77,18 @@ export async function aiMetadataProcessor(job: Job<AIMetadataJobData>): Promise<
     }
     
     await job.updateProgress(70);
-    await updateProcessingJob(processingJobId, 'ACTIVE', 70);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 70, undefined, 'ai-analysis', 'Chapters detected');
     
     // Stage 3: Extract title and author (70-100%)
     await job.updateProgress(80);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 80, undefined, 'ai-analysis', 'Extracting metadata...');
     
     // Try to extract title from first line
     const firstLine = text.split('\n')[0]?.trim();
     const detectedTitle = firstLine && firstLine.length < 100 ? firstLine : undefined;
     
     await job.updateProgress(100);
-    await updateProcessingJob(processingJobId, 'COMPLETED', 100);
+    await updateProcessingJob(processingJobId, 'COMPLETED', 100, undefined, 'completed', 'AI analysis complete');
     
     // Update book with summary
     await prisma.book.update({
@@ -112,6 +115,8 @@ export async function aiMetadataProcessor(job: Job<AIMetadataJobData>): Promise<
         type: 'CONVERT',
         status: 'PENDING',
         progress: 0,
+        stage: 'pending',
+        message: 'Waiting to start...',
       },
     });
     

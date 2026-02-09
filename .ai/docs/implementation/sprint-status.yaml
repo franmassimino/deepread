@@ -63,8 +63,8 @@ development_status:
   3-3-image-and-table-extraction: backlog
   3-4-content-conversion-to-html: done
   3-5-job-chain-orchestration: done
-  3-6-real-time-progress-updates-sse: backlog
-  3-7-processing-error-recovery: backlog
+  3-6-real-time-progress-updates-sse: done
+  3-7-processing-error-recovery: ready-for-dev
   3-8-background-processing-persistence: backlog
   epic-3-retrospective: optional
 

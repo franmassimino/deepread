@@ -5,23 +5,42 @@ import { ExtractJobResult } from './extract-job';
 import { AIMetadataJobResult } from './ai-metadata-job';
 
 /**
- * Update ProcessingJob status and progress
+ * Update ProcessingJob status, progress, stage and message
  */
 export async function updateProcessingJob(
   jobId: string,
   status: JobStatus,
   progress: number,
-  error?: string
+  error?: string,
+  stage?: string,
+  message?: string
 ): Promise<void> {
   try {
+    const updateData: {
+      status: JobStatus;
+      progress: number;
+      error: string | null;
+      completedAt?: Date;
+      stage?: string;
+      message?: string;
+    } = {
+      status,
+      progress,
+      error: error || null,
+      completedAt: status === 'COMPLETED' ? new Date() : undefined,
+    };
+    
+    if (stage !== undefined) {
+      updateData.stage = stage;
+    }
+    
+    if (message !== undefined) {
+      updateData.message = message;
+    }
+    
     await prisma.processingJob.update({
       where: { id: jobId },
-      data: {
-        status,
-        progress,
-        error: error || null,
-        completedAt: status === 'COMPLETED' ? new Date() : undefined,
-      },
+      data: updateData,
     });
   } catch (err) {
     console.error(`[Job] Failed to update job ${jobId}:`, err);

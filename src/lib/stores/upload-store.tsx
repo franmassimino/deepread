@@ -3,8 +3,14 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
 import { useBooksStore } from './books-store';
+import { useJobProgressStore } from './job-progress-store';
 
 export type UploadStatus = 'uploading' | 'processing' | 'ready' | 'error' | 'cancelled';
+
+export interface ProcessingInfo {
+  jobId: string;
+  processingJobId: string;
+}
 
 export interface UploadingBook {
   id: string;
@@ -16,6 +22,7 @@ export interface UploadingBook {
   error: string | null;
   xhr: XMLHttpRequest | null;
   bookId: string | null;
+  processingInfo: ProcessingInfo | null; // SSE job tracking info
 }
 
 interface UploadStore {
@@ -39,8 +46,6 @@ const PROCESSING_PROGRESS_START = 30;
 const PROCESSING_PROGRESS_RANGE = 70; // 100 - 30 = 70%
 
 // Processing steps shown during PDF extraction
-// Progress allocation: upload = 0-30%, processing = 30-100%
-// Processing stages: text (50% -> 30-65%), tables (100% -> 65-100%)
 const processingSteps = [
   { label: "Extracting text...", duration: 1500 },      // 30-65%
   { label: "Extracting tables...", duration: 1500 },    // 65-100%
@@ -171,6 +176,7 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
       error: null,
       xhr,
       bookId: null,
+      processingInfo: null,
     };
 
     // Add to store immediately
@@ -194,16 +200,32 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
           const response = JSON.parse(xhr.responseText);
           const bookId = response.bookId;
 
-          // Mark as processing and start real PDF extraction
+          // Get processing job info from response
+          const processingInfo: ProcessingInfo = {
+            jobId: response.jobId,
+            processingJobId: response.processingJobId,
+          };
+
+          // Mark as processing and store job info for SSE
           get().updateUpload(id, {
             status: 'processing',
             progress: UPLOAD_PROGRESS_MAX, // Upload complete = 30%
             currentStep: 1,
-            bookId
+            bookId,
+            processingInfo,
           });
 
-          // Trigger PDF processing and start polling
-          triggerProcessing(id, bookId, file.name, get);
+          // Register job in global progress store for SSE tracking
+          useJobProgressStore.getState().registerJob({
+            jobId: processingInfo.processingJobId,
+            bookId,
+            fileName: file.name,
+            uploadId: id,
+            progress: null,
+          });
+
+          // Trigger PDF processing
+          triggerProcessing(id, bookId, file.name, processingInfo, get);
 
           // Note: processQueue is called when processing completes, not here
 
@@ -264,101 +286,70 @@ export const useUploadStore = create<UploadStore>((set, get) => ({
 }));
 
 /**
- * Triggers PDF processing and polls for status updates.
- * Replaces the simulated processing with real extraction.
+ * Triggers PDF processing and sets up SSE for real-time progress updates.
+ * Uses Server-Sent Events instead of polling for better real-time updates.
  */
 async function triggerProcessing(
   uploadId: string,
   bookId: string,
   fileName: string,
+  processingInfo: ProcessingInfo,
   get: () => UploadStore
 ) {
+  const { processingJobId } = processingInfo;
   const bookTitle = fileName.replace('.pdf', '');
-
-  try {
-    // Step 1: Trigger PDF processing
-    console.log(`[Upload] Triggering processing for book: ${bookId}`);
-    const triggerResponse = await fetch(`/api/process/${bookId}`, {
-      method: 'POST',
-    });
-
-    if (!triggerResponse.ok) {
-      throw new Error('Failed to trigger PDF processing');
-    }
-
-    // Step 2: Poll for status every 2 seconds
-    const pollInterval = 2000; // 2 seconds
-    const maxAttempts = 150; // 5 minutes max (150 * 2s)
-    let attempts = 0;
-
-    const pollStatus = async (): Promise<void> => {
+  
+  // Set up SSE connection for real-time progress
+  const eventSource = new EventSource(`/api/jobs/${processingJobId}/progress`);
+  
+  eventSource.onopen = () => {
+    console.log(`[Upload] SSE connected for job ${processingJobId}`);
+  };
+  
+  eventSource.onmessage = (event) => {
+    try {
+      // Handle keep-alive comments
+      if (event.data.startsWith(':')) {
+        return;
+      }
+      
+      const data = JSON.parse(event.data);
+      
       // Check if upload was cancelled
       const currentBook = get().uploadingBooks.find(b => b.id === uploadId);
       if (!currentBook || currentBook.status === 'cancelled') {
-        return;
-      }
-
-      attempts++;
-      
-      if (attempts > maxAttempts) {
-        throw new Error('Processing timeout');
-      }
-
-      // Fetch current status with error handling
-      let statusResponse;
-      try {
-        statusResponse = await fetch(`/api/books/${bookId}/status`);
-      } catch (fetchError) {
-        console.warn(`[Upload] Network error polling status (attempt ${attempts}), retrying...`, fetchError);
-        setTimeout(pollStatus, pollInterval);
+        eventSource.close();
         return;
       }
       
-      if (!statusResponse.ok) {
-        const errorText = await statusResponse.text().catch(() => 'Unknown error');
-        console.warn(`[Upload] Status fetch failed: ${statusResponse.status} - ${errorText}`);
-        
-        // If 404, maybe the book isn't created yet, keep polling
-        if (statusResponse.status === 404) {
-          setTimeout(pollStatus, pollInterval);
-          return;
-        }
-        
-        throw new Error(`Failed to fetch status: ${statusResponse.status}`);
-      }
-
-      let statusData;
-      try {
-        statusData = await statusResponse.json();
-      } catch (parseError) {
-        console.warn('[Upload] Failed to parse status response, retrying...', parseError);
-        setTimeout(pollStatus, pollInterval);
-        return;
-      }
-      const { status, error, metadata } = statusData;
-
-      // Calculate progress: 30% (upload) + 70% * (status progress / 100)
-      const processingProgress = statusData.progress || 0;
+      const { status, progress, overallProgress, message, error } = data;
+      
+      // Calculate unified progress: 30% (upload) + 70% * (overallProgress / 100)
       const totalProgress = PROCESSING_PROGRESS_START + 
-        (processingProgress / 100) * PROCESSING_PROGRESS_RANGE;
-
-      // Update UI based on status
-      if (status === 'READY') {
+        ((overallProgress || progress || 0) / 100) * PROCESSING_PROGRESS_RANGE;
+      
+      // Update global job progress store
+      useJobProgressStore.getState().setJobProgress(processingJobId, data);
+      
+      // Handle terminal states
+      if (status === 'COMPLETED') {
         // Processing complete
+        eventSource.close();
+        
         get().updateUpload(uploadId, { 
           status: 'ready', 
           currentStep: processingSteps.length, 
           progress: 100 
         });
 
-        // Add book to library with real metadata
+        // Add book to library
         const colors = ['bg-blue-100', 'bg-purple-100', 'bg-green-100', 'bg-amber-100', 'bg-rose-100', 'bg-cyan-100'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
         useBooksStore.getState().addBook({
           id: bookId,
-          title: metadata.title || bookTitle,
-          author: metadata.author || 'Unknown Author',
+          title: bookTitle,
+          author: 'Unknown Author', // Will be updated when metadata extraction is complete
           progress: 0,
           status: 'reading',
           lastActivity: 'Just added',
@@ -370,7 +361,8 @@ async function triggerProcessing(
           duration: 4000,
         });
 
-        // Remove from uploading list after brief delay
+        // Unregister job and remove from uploading list
+        useJobProgressStore.getState().unregisterJob(processingJobId);
         setTimeout(() => {
           get().removeUpload(uploadId);
         }, 1000);
@@ -378,46 +370,64 @@ async function triggerProcessing(
         // Process next queued upload
         get().processQueue();
         
-      } else if (status === 'ERROR') {
+      } else if (status === 'FAILED') {
         // Processing failed
-        throw new Error(error || 'PDF processing failed');
+        eventSource.close();
+        
+        const errorMessage = error || 'PDF processing failed';
+        
+        get().updateUpload(uploadId, {
+          status: 'error',
+          error: errorMessage
+        });
+
+        toast.error(`Failed to process "${fileName}"`, {
+          description: errorMessage,
+          duration: 5000,
+        });
+
+        // Unregister job
+        useJobProgressStore.getState().unregisterJob(processingJobId);
+        
+        // Process next queued upload
+        get().processQueue();
         
       } else {
         // Still processing - update progress
-        const currentStep = Math.min(
-          Math.floor((processingProgress / 100) * processingSteps.length) + 1,
-          processingSteps.length
-        );
+        // Map message to current step
+        const stepMap: Record<string, number> = {
+          'Waiting to start...': 1,
+          'Extracting text...': 1,
+          'Extracting tables and images...': 2,
+          'Finalizing extraction...': 2,
+          'Analyzing content...': 3,
+          'Converting to HTML...': 4,
+        };
+        
+        const currentStep = stepMap[message] || 
+          Math.min(Math.floor((totalProgress - PROCESSING_PROGRESS_START) / 10) + 1, processingSteps.length);
         
         get().updateUpload(uploadId, {
           currentStep,
           progress: Math.round(totalProgress)
         });
-
-        // Poll again after interval
-        setTimeout(pollStatus, pollInterval);
       }
-    };
-
-    // Start polling
-    await pollStatus();
-
-  } catch (error) {
-    console.error('[Upload] Processing error:', error);
+    } catch (error) {
+      console.error('[Upload] Error parsing SSE message:', error);
+    }
+  };
+  
+  eventSource.onerror = (error) => {
+    console.error(`[Upload] SSE error for job ${processingJobId}:`, error);
     
-    const errorMessage = error instanceof Error ? error.message : 'Processing failed';
-    
-    get().updateUpload(uploadId, {
-      status: 'error',
-      error: errorMessage
-    });
-
-    toast.error(`Failed to process "${fileName}"`, {
-      description: errorMessage,
-      duration: 5000,
-    });
-
-    // Process next queued upload
-    get().processQueue();
-  }
+    // Check if we should retry or show error
+    const currentBook = get().uploadingBooks.find(b => b.id === uploadId);
+    if (currentBook && currentBook.status === 'processing') {
+      // Connection lost but processing may still be ongoing
+      // The EventSource will auto-reconnect, just update UI
+      get().updateUpload(uploadId, {
+        error: 'Connection lost. Reconnecting...'
+      });
+    }
+  };
 }

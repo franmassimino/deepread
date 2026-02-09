@@ -27,7 +27,7 @@ export async function extractProcessor(job: Job<ExtractJobData>): Promise<Extrac
   console.log(`[ExtractJob] Starting extraction for book ${bookId}, job ${processingJobId}`);
   
   // Update job status to ACTIVE
-  await updateProcessingJob(processingJobId, 'ACTIVE', 0);
+  await updateProcessingJob(processingJobId, 'ACTIVE', 0, undefined, 'extract-text', 'Extracting text...');
   
   try {
     // Get book details
@@ -44,6 +44,7 @@ export async function extractProcessor(job: Job<ExtractJobData>): Promise<Extrac
     
     // Stage 1: Extract text (0-33%)
     await job.updateProgress(10);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 10, undefined, 'extract-text', 'Extracting text...');
     const { text, pageCount } = await extractTextFromPDF(pdfPath);
     
     if (isScannedPDF(text)) {
@@ -54,10 +55,11 @@ export async function extractProcessor(job: Job<ExtractJobData>): Promise<Extrac
     console.log(`[ExtractJob] Extracted ${pageCount} pages, ${wordCount} words`);
     
     await job.updateProgress(33);
-    await updateProcessingJob(processingJobId, 'ACTIVE', 33);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 33, undefined, 'extract-text', 'Text extraction complete');
     
     // Stage 2: Extract tables (33-66%)
     await job.updateProgress(50);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 50, undefined, 'extract-visual', 'Extracting tables and images...');
     let tables: { html: string; pageNumber: number }[] = [];
     try {
       tables = await extractTablesFromPDF(pdfPath);
@@ -67,11 +69,11 @@ export async function extractProcessor(job: Job<ExtractJobData>): Promise<Extrac
     }
     
     await job.updateProgress(66);
-    await updateProcessingJob(processingJobId, 'ACTIVE', 66);
+    await updateProcessingJob(processingJobId, 'ACTIVE', 66, undefined, 'extract-visual', 'Table extraction complete');
     
     // Stage 3: Mark extraction complete (66-100%)
     await job.updateProgress(100);
-    await updateProcessingJob(processingJobId, 'COMPLETED', 100);
+    await updateProcessingJob(processingJobId, 'COMPLETED', 100, undefined, 'completed', 'Extraction complete');
     
     console.log(`[ExtractJob] Completed for book ${bookId}`);
     
@@ -90,6 +92,8 @@ export async function extractProcessor(job: Job<ExtractJobData>): Promise<Extrac
         type: 'AI_METADATA',
         status: 'PENDING',
         progress: 0,
+        stage: 'pending',
+        message: 'Waiting to start...',
       },
     });
     

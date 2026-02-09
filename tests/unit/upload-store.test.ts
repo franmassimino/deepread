@@ -1,5 +1,35 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
+// Mock EventSource before any modules are loaded
+class MockEventSource {
+  onopen: (() => void) | null = null;
+  onmessage: ((event: { data: string }) => void) | null = null;
+  onerror: ((error: unknown) => void) | null = null;
+  close = vi.fn();
+
+  constructor(public url: string) {
+    // Auto-trigger open and completed message after handlers are set
+    Promise.resolve().then(() => {
+      if (this.onopen) this.onopen();
+      if (this.onmessage) {
+        this.onmessage({
+          data: JSON.stringify({
+            jobId: 'test-job-id',
+            status: 'COMPLETED',
+            progress: 100,
+            overallProgress: 100,
+            stage: 'completed',
+            message: 'Ready!',
+            error: null,
+          }),
+        });
+      }
+    });
+  }
+}
+
+global.EventSource = MockEventSource as unknown as typeof EventSource;
+
 // Mock XMLHttpRequest
 class MockXHR {
   static instances: MockXHR[] = [];
@@ -30,9 +60,14 @@ class MockXHR {
     }
   }
 
-  simulateSuccess(bookId: string) {
+  simulateSuccess(bookId: string, jobId?: string, processingJobId?: string) {
     this.status = 201;
-    this.responseText = JSON.stringify({ success: true, bookId });
+    this.responseText = JSON.stringify({ 
+      success: true, 
+      bookId,
+      jobId: jobId || 'test-job-id',
+      processingJobId: processingJobId || 'test-processing-job-id',
+    });
     if (this.onload) this.onload();
   }
 
@@ -65,6 +100,17 @@ vi.mock('@/lib/stores/books-store', () => ({
   useBooksStore: {
     getState: () => ({
       addBook: vi.fn(),
+    }),
+  },
+}));
+
+// Mock job progress store
+vi.mock('@/lib/stores/job-progress-store', () => ({
+  useJobProgressStore: {
+    getState: () => ({
+      registerJob: vi.fn(),
+      unregisterJob: vi.fn(),
+      setJobProgress: vi.fn(),
     }),
   },
 }));
@@ -122,7 +168,8 @@ describe('Upload Store', () => {
       xhr.simulateProgress(50, 100);
 
       const state = useUploadStore.getState();
-      expect(state.uploadingBooks[0].progress).toBe(50);
+      // Upload progress is 0-30% of total, so 50% upload = 15% total (rounded)
+      expect(state.uploadingBooks[0].progress).toBe(15);
     });
 
     it('should handle successful upload', async () => {
@@ -132,17 +179,12 @@ describe('Upload Store', () => {
       useUploadStore.getState().startUpload(file);
 
       const xhr = MockXHR.instances[0];
-      xhr.simulateSuccess('book-123');
+      xhr.simulateSuccess('book-123', 'test-job-id', 'test-processing-job-id');
 
       let state = useUploadStore.getState();
-      expect(state.uploadingBooks[0].status).toBe('success');
+      // After upload, status is 'processing' (SSE handles completion to 'ready')
+      expect(state.uploadingBooks[0].status).toBe('processing');
       expect(state.uploadingBooks[0].bookId).toBe('book-123');
-
-      // After delay, should be removed
-      await vi.advanceTimersByTimeAsync(1600);
-
-      state = useUploadStore.getState();
-      expect(state.uploadingBooks).toHaveLength(0);
 
       vi.useRealTimers();
     });
@@ -235,7 +277,8 @@ describe('Upload Store', () => {
   });
 
   describe('retryUpload', () => {
-    it('should remove failed upload and start new one', () => {
+    it('should remove failed upload and start new one', async () => {
+      vi.useFakeTimers();
       const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
 
       useUploadStore.getState().startUpload(file);
@@ -244,6 +287,9 @@ describe('Upload Store', () => {
       xhr.simulateError(500, 'Server error');
 
       const uploadId = useUploadStore.getState().uploadingBooks[0].id;
+
+      // Advance timers to ensure new ID is different
+      await vi.advanceTimersByTimeAsync(10);
 
       useUploadStore.getState().retryUpload(uploadId);
 
@@ -256,6 +302,8 @@ describe('Upload Store', () => {
       expect(state.uploadingBooks[0].fileName).toBe('test.pdf');
       expect(state.uploadingBooks[0].status).toBe('uploading');
       expect(state.uploadingBooks[0].id).not.toBe(uploadId);
+
+      vi.useRealTimers();
     });
 
     it('should not retry if upload is still in progress', () => {
@@ -317,7 +365,8 @@ describe('Upload Store', () => {
 
       const state = useUploadStore.getState();
       expect(state.uploadingBooks[0].progress).toBe(0); // First upload unchanged
-      expect(state.uploadingBooks[1].progress).toBe(75); // Second upload updated
+      // Upload phase is 0-30% of total progress, so 75% upload = ~22% total
+      expect(state.uploadingBooks[1].progress).toBe(23); // Second upload updated (75% of 30% = 22.5, rounded)
     });
   });
 
